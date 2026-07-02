@@ -1,0 +1,50 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  id                    String        @id @default(uuid())
+  nombaVirtualAccountId String
+  customerName          String
+  accountRef            String        @unique
+  expectedAmount        Int?
+  expiryDate            DateTime?
+  status                String        @default("active")
+  createdAt             DateTime      @default(now())
+  transactions          Transaction[]
+}
+
+model Transaction {
+  id              String    @id @default(uuid())
+  accountId       String
+  merchantTxRef   String    @unique
+  sessionId       String?
+  amount          Int
+  direction       String
+  state           String    @default("initiated")
+  settlementMatch String?
+  failureReason   String?
+  createdAt       DateTime  @default(now())
+  lastCheckedAt   DateTime?
+  requeueCount    Int       @default(0)
+  account         Account   @relation(fields: [accountId], references: [id])
+
+  @@index([state])
+  @@index([accountId])
+  @@index([merchantTxRef])
+}
+
+model AuditLog {
+  id             String   @id @default(uuid())
+  sequenceNumber Int      @unique
+  eventType      String
+  payload        Json
+  previousHash   String
+  hash           String
+  timestamp      DateTime @default(now())
+}
