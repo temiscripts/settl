@@ -9,12 +9,19 @@ const logger = require('../lib/logger');
 const router = Router();
 const prisma = new PrismaClient();
 
+function withTimeout(promise, ms, label) {
+  const timeout = new Promise((_, reject) =>
+    setTimeout(() => reject(new Error(`${label} check timed out after ${ms}ms`)), ms)
+  );
+  return Promise.race([promise, timeout]);
+}
+
 router.get('/health', async (req, res) => {
   const checks = {};
   let allHealthy = true;
 
   try {
-    await prisma.$queryRaw`SELECT 1`;
+    await withTimeout(prisma.$queryRaw`SELECT 1`, 5000, 'database');
     checks.database = { status: 'ok' };
   } catch (err) {
     checks.database = { status: 'error', message: err.message };
@@ -24,10 +31,18 @@ router.get('/health', async (req, res) => {
   try {
     const Redis = require('ioredis');
     const conn = getRedisConnection();
-    const redis = new Redis({ ...conn, lazyConnect: true, connectTimeout: 3000 });
-    await redis.connect();
-    await redis.ping();
-    await redis.quit();
+    const redis = new Redis({
+      ...conn,
+      lazyConnect: true,
+      connectTimeout: 3000,
+      maxRetriesPerRequest: 0,
+      enableOfflineQueue: false,
+    });
+    await withTimeout(
+      redis.connect().then(() => redis.ping()).then(() => redis.quit()),
+      4000,
+      'redis'
+    );
     checks.redis = { status: 'ok' };
   } catch (err) {
     checks.redis = { status: 'error', message: err.message };
@@ -36,18 +51,17 @@ router.get('/health', async (req, res) => {
 
   try {
     const queue = getWebhookQueue();
-    const [waiting, active, failed] = await Promise.all([
-      queue.getWaitingCount(),
-      queue.getActiveCount(),
-      queue.getFailedCount(),
-    ]);
+    const [waiting, active, failed] = await withTimeout(
+      Promise.all([queue.getWaitingCount(), queue.getActiveCount(), queue.getFailedCount()]),
+      4000,
+      'queue'
+    );
     checks.queue = { status: 'ok', waiting, active, dlqCount: failed };
   } catch (err) {
     checks.queue = { status: 'error', message: err.message };
   }
 
-  const circuitBreakers = getCircuitBreakerStates();
-  checks.nomba = { circuitBreakers };
+  checks.nomba = { circuitBreakers: getCircuitBreakerStates() };
 
   const httpStatus = allHealthy ? 200 : 503;
   logger.info({ requestId: req.requestId, checks, allHealthy }, 'health check');
