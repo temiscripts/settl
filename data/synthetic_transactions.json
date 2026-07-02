@@ -1,0 +1,752 @@
+[
+  {
+    "id": "0f090987-a8cb-4393-9d49-cc5e476e7ef7",
+    "accountId": "acc_104",
+    "merchantTxRef": "MERCH_TXN_1000",
+    "sessionId": "NMB_896332",
+    "destinationBankCode": [
+      "042"
+    ],
+    "amount": 4253000,
+    "settlementMatch": "exact",
+    "state": "settled",
+    "direction": "debit",
+    "createdAt": "2026-07-02T06:48:42.884047Z",
+    "lastCheckedAt": "2026-07-02T06:49:42.884047Z"
+  },
+  {
+    "id": "50152776-e40b-41e2-b8bc-3fe722263fa4",
+    "accountId": "acc_100",
+    "merchantTxRef": "MERCH_TXN_1001",
+    "sessionId": "NMB_579399",
+    "destinationBankCode": [
+      "022"
+    ],
+    "amount": 1295900,
+    "settlementMatch": "exact",
+    "state": "settled",
+    "direction": "credit",
+    "createdAt": "2026-07-02T06:49:42.884161Z",
+    "lastCheckedAt": "2026-07-02T06:50:42.884161Z"
+  },
+  {
+    "id": "e5267e16-bcf9-40c7-93cb-60ba623309e6",
+    "accountId": "acc_104",
+    "merchantTxRef": "MERCH_TXN_1002",
+    "sessionId": "NMB_413448",
+    "destinationBankCode": [
+      "037"
+    ],
+    "amount": 2427900,
+    "settlementMatch": "exact",
+    "state": "settled",
+    "direction": "debit",
+    "createdAt": "2026-07-02T06:50:42.884213Z",
+    "lastCheckedAt": "2026-07-02T06:51:42.884213Z"
+  },
+  {
+    "id": "67fe3389-f741-42b6-a854-9a362c6a61cb",
+    "accountId": "acc_100",
+    "merchantTxRef": "MERCH_TXN_1003",
+    "sessionId": "NMB_438927",
+    "destinationBankCode": [
+      "042"
+    ],
+    "amount": 4443900,
+    "settlementMatch": "under",
+    "state": "settled",
+    "direction": "credit",
+    "createdAt": "2026-07-02T06:51:42.884259Z",
+    "lastCheckedAt": "2026-07-02T06:54:42.884259Z"
+  },
+  {
+    "id": "b4256c91-17b7-48d6-9f3a-090a75638555",
+    "accountId": "acc_101",
+    "merchantTxRef": "MERCH_TXN_1004",
+    "sessionId": "NMB_391709",
+    "destinationBankCode": [
+      "022"
+    ],
+    "amount": 1261300,
+    "settlementMatch": "under",
+    "state": "settled",
+    "direction": "debit",
+    "createdAt": "2026-07-02T06:52:42.884298Z",
+    "lastCheckedAt": "2026-07-02T06:53:42.884298Z"
+  },
+  {
+    "id": "75deb9d0-9311-4268-9014-b07fa3a2aa8f",
+    "accountId": "acc_104",
+    "merchantTxRef": "MERCH_TXN_1005",
+    "sessionId": "NMB_152547",
+    "destinationBankCode": [
+      "042"
+    ],
+    "amount": 651800,
+    "settlementMatch": "exact",
+    "state": "settled",
+    "direction": "credit",
+    "createdAt": "2026-07-02T06:53:42.884336Z",
+    "lastCheckedAt": "2026-07-02T06:55:42.884336Z"
+  },
+  {
+    "id": "b01b7386-45a2-46be-bf59-31de81b8fce9",
+    "accountId": "acc_101",
+    "merchantTxRef": "MERCH_TXN_1006",
+    "sessionId": "NMB_975609",
+    "destinationBankCode": [
+      "042"
+    ],
+    "amount": 4828000,
+    "settlementMatch": "exact",
+    "state": "settled",
+    "direction": "credit",
+    "createdAt": "2026-07-02T06:54:42.884386Z",
+    "lastCheckedAt": "2026-07-02T06:55:42.884386Z"
+  },
+  {
+    "id": "e35d44f6-1422-4790-8a34-afe36f7d7c45",
+    "accountId": "acc_102",
+    "merchantTxRef": "MERCH_TXN_1007",
+    "sessionId": "NMB_603718",
+    "destinationBankCode": [
+      "054"
+    ],
+    "amount": 0,
+    "settlementMatch": "none",
+    "state": "failed",
+    "direction": "debit",
+    "createdAt": "2026-07-02T06:55:42.884422Z",
+    "lastCheckedAt": "2026-07-02T06:58:42.884422Z"
+  },
+  {
+    "id": "34d36883-61a2-4e61-bf09-8c08eeab03e2",
+    "accountId": "acc_100",
+    "merchantTxRef": "MERCH_TXN_1008",
+    "sessionId": "NMB_732746",
+    "destinationBankCode": [
+      "042"
+    ],
+    "amount": 227300,
+    "settlementMatch": "exact",
+    "state": "settled",
+    "direction": "credit",
+    "createdAt": "2026-07-02T06:56:42.884457Z",
+    "lastCheckedAt": "2026-07-02T06:59:42.884457Z"
+  },
+  {
+    "id": "10ce06e2-3f72-449f-9c7a-c4d4601e6c41",
+    "accountId": "acc_101",
+    "merchantTxRef": "MERCH_TXN_1009",
+    "sessionId": "NMB_718332",
+    "destinationBankCode": [
+      "022"
+    ],
+    "amount": 1233200,
+    "settlementMatch": "over",
+    "state": "settled",
+    "direction": "credit",
+    "createdAt": "2026-07-02T06:57:42.884494Z",
+    "lastCheckedAt": "2026-07-02T06:58:42.884494Z"
+  },
+  {
+    "id": "3faa8929-d976-4b2d-941c-a9a29fa1f9f0",
+    "accountId": "acc_104",
+    "merchantTxRef": "MERCH_TXN_1010",
+    "sessionId": "NMB_759868",
+    "destinationBankCode": [
+      "054"
+    ],
+    "amount": 3827800,
+    "settlementMatch": "under",
+    "state": "settled",
+    "direction": "debit",
+    "createdAt": "2026-07-02T06:58:42.884533Z",
+    "lastCheckedAt": "2026-07-02T06:59:42.884533Z"
+  },
+  {
+    "id": "55c53bf0-3d6c-4704-8785-149bfca35619",
+    "accountId": "acc_102",
+    "merchantTxRef": "MERCH_TXN_1011",
+    "sessionId": "NMB_590341",
+    "destinationBankCode": [
+      "042"
+    ],
+    "amount": 766100,
+    "settlementMatch": "exact",
+    "state": "settled",
+    "direction": "credit",
+    "createdAt": "2026-07-02T06:59:42.884571Z",
+    "lastCheckedAt": "2026-07-02T07:02:42.884571Z"
+  },
+  {
+    "id": "ef153aad-75f5-4cbb-ba10-e7d7a89dfbf3",
+    "accountId": "acc_100",
+    "merchantTxRef": "MERCH_TXN_1012",
+    "sessionId": "NMB_899515",
+    "destinationBankCode": [
+      "054"
+    ],
+    "amount": 965100,
+    "settlementMatch": "over",
+    "state": "settled",
+    "direction": "debit",
+    "createdAt": "2026-07-02T07:00:42.884622Z",
+    "lastCheckedAt": "2026-07-02T07:03:42.884622Z"
+  },
+  {
+    "id": "06c19b50-a60d-409c-be8a-760dadd3f5a0",
+    "accountId": "acc_104",
+    "merchantTxRef": "MERCH_TXN_1013",
+    "sessionId": "NMB_679279",
+    "destinationBankCode": [
+      "054"
+    ],
+    "amount": 0,
+    "settlementMatch": "none",
+    "state": "pending",
+    "direction": "debit",
+    "createdAt": "2026-07-02T07:01:42.884678Z",
+    "lastCheckedAt": "2026-07-02T07:04:42.884678Z"
+  },
+  {
+    "id": "2a61b604-26b3-4108-a5b9-d3569bab1d8b",
+    "accountId": "acc_103",
+    "merchantTxRef": "MERCH_TXN_1014",
+    "sessionId": "NMB_567629",
+    "destinationBankCode": [
+      "037"
+    ],
+    "amount": 4144900,
+    "settlementMatch": "exact",
+    "state": "settled",
+    "direction": "credit",
+    "createdAt": "2026-07-02T07:02:42.884722Z",
+    "lastCheckedAt": "2026-07-02T07:04:42.884722Z"
+  },
+  {
+    "id": "e063b935-7ff8-408f-a3f0-944ca2aa70c4",
+    "accountId": "acc_102",
+    "merchantTxRef": "MERCH_TXN_1015",
+    "sessionId": "NMB_657469",
+    "destinationBankCode": [
+      "037"
+    ],
+    "amount": 916800,
+    "settlementMatch": "exact",
+    "state": "settled",
+    "direction": "debit",
+    "createdAt": "2026-07-02T07:03:42.884759Z",
+    "lastCheckedAt": "2026-07-02T07:04:42.884759Z"
+  },
+  {
+    "id": "662071d2-751c-4fd2-bfbb-384aa19ec820",
+    "accountId": "acc_104",
+    "merchantTxRef": "MERCH_TXN_1016",
+    "sessionId": "NMB_500384",
+    "destinationBankCode": [
+      "042"
+    ],
+    "amount": 3130700,
+    "settlementMatch": "under",
+    "state": "settled",
+    "direction": "credit",
+    "createdAt": "2026-07-02T07:04:42.884794Z",
+    "lastCheckedAt": "2026-07-02T07:07:42.884794Z"
+  },
+  {
+    "id": "a9dd1339-2528-4dc4-9eba-d62659d86e18",
+    "accountId": "acc_102",
+    "merchantTxRef": "MERCH_TXN_1017",
+    "sessionId": "NMB_691474",
+    "destinationBankCode": [
+      "054"
+    ],
+    "amount": 722500,
+    "settlementMatch": "exact",
+    "state": "settled",
+    "direction": "credit",
+    "createdAt": "2026-07-02T07:05:42.884828Z",
+    "lastCheckedAt": "2026-07-02T07:07:42.884828Z"
+  },
+  {
+    "id": "ba2e8e2e-4200-4ab9-b7f5-a55368cb86de",
+    "accountId": "acc_105",
+    "merchantTxRef": "MERCH_TXN_1018",
+    "sessionId": "NMB_344964",
+    "destinationBankCode": [
+      "042"
+    ],
+    "amount": 2622900,
+    "settlementMatch": "under",
+    "state": "settled",
+    "direction": "credit",
+    "createdAt": "2026-07-02T07:06:42.884862Z",
+    "lastCheckedAt": "2026-07-02T07:07:42.884862Z"
+  },
+  {
+    "id": "3ce82499-cdc9-4680-bdc1-26194f41c997",
+    "accountId": "acc_105",
+    "merchantTxRef": "MERCH_TXN_1019",
+    "sessionId": "NMB_486470",
+    "destinationBankCode": [
+      "042"
+    ],
+    "amount": 3422500,
+    "settlementMatch": "exact",
+    "state": "settled",
+    "direction": "debit",
+    "createdAt": "2026-07-02T07:07:42.884895Z",
+    "lastCheckedAt": "2026-07-02T07:10:42.884895Z"
+  },
+  {
+    "id": "aa80ac6e-3812-4504-a111-2ff6a263a5e6",
+    "accountId": "acc_100",
+    "merchantTxRef": "MERCH_TXN_1020",
+    "sessionId": "NMB_374050",
+    "destinationBankCode": [
+      "037"
+    ],
+    "amount": 2073700,
+    "settlementMatch": "exact",
+    "state": "settled",
+    "direction": "credit",
+    "createdAt": "2026-07-02T07:08:42.884930Z",
+    "lastCheckedAt": "2026-07-02T07:09:42.884930Z"
+  },
+  {
+    "id": "7c72f21c-2a2e-4ad6-9831-f9aa012acb07",
+    "accountId": "acc_105",
+    "merchantTxRef": "MERCH_TXN_1021",
+    "sessionId": "NMB_473243",
+    "destinationBankCode": [
+      "037"
+    ],
+    "amount": 0,
+    "settlementMatch": "none",
+    "state": "failed",
+    "direction": "credit",
+    "createdAt": "2026-07-02T07:09:42.884973Z",
+    "lastCheckedAt": "2026-07-02T07:11:42.884973Z"
+  },
+  {
+    "id": "545e4199-0882-4ab8-8cc0-4ba17cb11ec4",
+    "accountId": "acc_105",
+    "merchantTxRef": "MERCH_TXN_1022",
+    "sessionId": "NMB_269499",
+    "destinationBankCode": [
+      "054"
+    ],
+    "amount": 4195000,
+    "settlementMatch": "exact",
+    "state": "settled",
+    "direction": "credit",
+    "createdAt": "2026-07-02T07:10:42.885008Z",
+    "lastCheckedAt": "2026-07-02T07:13:42.885008Z"
+  },
+  {
+    "id": "be571d43-e6de-4995-8e17-07a645d6204a",
+    "accountId": "acc_103",
+    "merchantTxRef": "MERCH_TXN_1023",
+    "sessionId": "NMB_403151",
+    "destinationBankCode": [
+      "037"
+    ],
+    "amount": 2704200,
+    "settlementMatch": "exact",
+    "state": "settled",
+    "direction": "credit",
+    "createdAt": "2026-07-02T07:11:42.885043Z",
+    "lastCheckedAt": "2026-07-02T07:13:42.885043Z"
+  },
+  {
+    "id": "489bb588-f5c9-41fa-aad4-0c22e3a1ba9e",
+    "accountId": "acc_101",
+    "merchantTxRef": "MERCH_TXN_1024",
+    "sessionId": "NMB_877390",
+    "destinationBankCode": [
+      "042"
+    ],
+    "amount": 1972800,
+    "settlementMatch": "exact",
+    "state": "settled",
+    "direction": "debit",
+    "createdAt": "2026-07-02T07:12:42.885079Z",
+    "lastCheckedAt": "2026-07-02T07:14:42.885079Z"
+  },
+  {
+    "id": "19d98c9d-3fbc-411d-9149-cd4758169146",
+    "accountId": "acc_103",
+    "merchantTxRef": "MERCH_TXN_1025",
+    "sessionId": "NMB_340386",
+    "destinationBankCode": [
+      "042"
+    ],
+    "amount": 4100800,
+    "settlementMatch": "exact",
+    "state": "settled",
+    "direction": "debit",
+    "createdAt": "2026-07-02T07:13:42.885116Z",
+    "lastCheckedAt": "2026-07-02T07:14:42.885116Z"
+  },
+  {
+    "id": "3bf151d3-1660-40ef-a138-8eb3f7b02bbb",
+    "accountId": "acc_103",
+    "merchantTxRef": "MERCH_TXN_1026",
+    "sessionId": "NMB_826471",
+    "destinationBankCode": [
+      "042"
+    ],
+    "amount": 1472300,
+    "settlementMatch": "over",
+    "state": "settled",
+    "direction": "debit",
+    "createdAt": "2026-07-02T07:14:42.885152Z",
+    "lastCheckedAt": "2026-07-02T07:16:42.885152Z"
+  },
+  {
+    "id": "9ebd8d71-1e29-462d-a559-8eda5cb0a4d8",
+    "accountId": "acc_100",
+    "merchantTxRef": "MERCH_TXN_1027",
+    "sessionId": "NMB_274117",
+    "destinationBankCode": [
+      "037"
+    ],
+    "amount": 4380300,
+    "settlementMatch": "under",
+    "state": "settled",
+    "direction": "credit",
+    "createdAt": "2026-07-02T07:15:42.885188Z",
+    "lastCheckedAt": "2026-07-02T07:17:42.885188Z"
+  },
+  {
+    "id": "badd9437-120b-4e7c-a7c7-b5259146ae2b",
+    "accountId": "acc_100",
+    "merchantTxRef": "MERCH_TXN_1028",
+    "sessionId": "NMB_456950",
+    "destinationBankCode": [
+      "054"
+    ],
+    "amount": 996700,
+    "settlementMatch": "under",
+    "state": "settled",
+    "direction": "debit",
+    "createdAt": "2026-07-02T07:16:42.885224Z",
+    "lastCheckedAt": "2026-07-02T07:17:42.885224Z"
+  },
+  {
+    "id": "2b6d50cb-8145-4168-887b-dd6b806e7232",
+    "accountId": "acc_100",
+    "merchantTxRef": "MERCH_TXN_1029",
+    "sessionId": "NMB_651486",
+    "destinationBankCode": [
+      "037"
+    ],
+    "amount": 0,
+    "settlementMatch": "none",
+    "state": "failed",
+    "direction": "credit",
+    "createdAt": "2026-07-02T07:17:42.885259Z",
+    "lastCheckedAt": "2026-07-02T07:19:42.885259Z"
+  },
+  {
+    "id": "7e741a50-cac4-4773-b0e5-054e51f6ae9f",
+    "accountId": "acc_104",
+    "merchantTxRef": "MERCH_TXN_1030",
+    "sessionId": "NMB_810645",
+    "destinationBankCode": [
+      "022"
+    ],
+    "amount": 1279700,
+    "settlementMatch": "under",
+    "state": "settled",
+    "direction": "debit",
+    "createdAt": "2026-07-02T07:18:42.885292Z",
+    "lastCheckedAt": "2026-07-02T07:19:42.885292Z"
+  },
+  {
+    "id": "614ae56e-ac53-4f92-9eb6-9ca6e7933a57",
+    "accountId": "acc_100",
+    "merchantTxRef": "MERCH_TXN_1031",
+    "sessionId": "NMB_226195",
+    "destinationBankCode": [
+      "022"
+    ],
+    "amount": 303600,
+    "settlementMatch": "exact",
+    "state": "settled",
+    "direction": "credit",
+    "createdAt": "2026-07-02T07:19:42.885327Z",
+    "lastCheckedAt": "2026-07-02T07:21:42.885327Z"
+  },
+  {
+    "id": "1d9ddb7c-4381-4232-917f-ebffe543fb4a",
+    "accountId": "acc_100",
+    "merchantTxRef": "MERCH_TXN_1032",
+    "sessionId": "NMB_936146",
+    "destinationBankCode": [
+      "042"
+    ],
+    "amount": 2345000,
+    "settlementMatch": "exact",
+    "state": "settled",
+    "direction": "debit",
+    "createdAt": "2026-07-02T07:20:42.885368Z",
+    "lastCheckedAt": "2026-07-02T07:22:42.885368Z"
+  },
+  {
+    "id": "bd86d039-ba7b-44eb-81b1-ccb43525a54a",
+    "accountId": "acc_102",
+    "merchantTxRef": "MERCH_TXN_1033",
+    "sessionId": "NMB_917621",
+    "destinationBankCode": [
+      "042"
+    ],
+    "amount": 477400,
+    "settlementMatch": "exact",
+    "state": "settled",
+    "direction": "debit",
+    "createdAt": "2026-07-02T07:21:42.885403Z",
+    "lastCheckedAt": "2026-07-02T07:23:42.885403Z"
+  },
+  {
+    "id": "132125fb-75f0-410f-a84c-7f23fbe422fd",
+    "accountId": "acc_100",
+    "merchantTxRef": "MERCH_TXN_1034",
+    "sessionId": "NMB_770735",
+    "destinationBankCode": [
+      "037"
+    ],
+    "amount": 2193100,
+    "settlementMatch": "exact",
+    "state": "settled",
+    "direction": "debit",
+    "createdAt": "2026-07-02T07:22:42.885436Z",
+    "lastCheckedAt": "2026-07-02T07:24:42.885436Z"
+  },
+  {
+    "id": "1f5d34c7-f969-460c-867a-587608fe6640",
+    "accountId": "acc_101",
+    "merchantTxRef": "MERCH_TXN_1035",
+    "sessionId": "NMB_132754",
+    "destinationBankCode": [
+      "022"
+    ],
+    "amount": 1668500,
+    "settlementMatch": "exact",
+    "state": "settled",
+    "direction": "debit",
+    "createdAt": "2026-07-02T07:23:42.885471Z",
+    "lastCheckedAt": "2026-07-02T07:24:42.885471Z"
+  },
+  {
+    "id": "b88d500f-e7d7-4e76-9144-6f14dc80af82",
+    "accountId": "acc_105",
+    "merchantTxRef": "MERCH_TXN_1036",
+    "sessionId": "NMB_951972",
+    "destinationBankCode": [
+      "037"
+    ],
+    "amount": 4743300,
+    "settlementMatch": "exact",
+    "state": "settled",
+    "direction": "debit",
+    "createdAt": "2026-07-02T07:24:42.885505Z",
+    "lastCheckedAt": "2026-07-02T07:25:42.885505Z"
+  },
+  {
+    "id": "541542f9-6ad7-4ebf-b22a-6206e8ea35e4",
+    "accountId": "acc_103",
+    "merchantTxRef": "MERCH_TXN_1037",
+    "sessionId": "NMB_607522",
+    "destinationBankCode": [
+      "022"
+    ],
+    "amount": 1532500,
+    "settlementMatch": "exact",
+    "state": "settled",
+    "direction": "credit",
+    "createdAt": "2026-07-02T07:25:42.885540Z",
+    "lastCheckedAt": "2026-07-02T07:28:42.885540Z"
+  },
+  {
+    "id": "c9ce1ac7-f4ae-4da9-8cd9-31a4992e8ee8",
+    "accountId": "acc_104",
+    "merchantTxRef": "MERCH_TXN_1038",
+    "sessionId": "NMB_493974",
+    "destinationBankCode": [
+      "022"
+    ],
+    "amount": 2300700,
+    "settlementMatch": "exact",
+    "state": "settled",
+    "direction": "debit",
+    "createdAt": "2026-07-02T07:26:42.885573Z",
+    "lastCheckedAt": "2026-07-02T07:29:42.885573Z"
+  },
+  {
+    "id": "2748599d-7ca8-4feb-ae99-ae7b83c2b852",
+    "accountId": "acc_100",
+    "merchantTxRef": "MERCH_TXN_1039",
+    "sessionId": "NMB_258665",
+    "destinationBankCode": [
+      "022"
+    ],
+    "amount": 0,
+    "settlementMatch": "none",
+    "state": "failed",
+    "direction": "credit",
+    "createdAt": "2026-07-02T07:27:42.885611Z",
+    "lastCheckedAt": "2026-07-02T07:30:42.885611Z"
+  },
+  {
+    "id": "8c86c1fa-5f9b-4827-835c-22238585f6c4",
+    "accountId": "acc_103",
+    "merchantTxRef": "MERCH_TXN_1040",
+    "sessionId": "NMB_846314",
+    "destinationBankCode": [
+      "042"
+    ],
+    "amount": 2188600,
+    "settlementMatch": "exact",
+    "state": "settled",
+    "direction": "debit",
+    "createdAt": "2026-07-02T07:28:42.886077Z",
+    "lastCheckedAt": "2026-07-02T07:30:42.886077Z"
+  },
+  {
+    "id": "b31d77c1-53fc-4fb3-98df-558f7afa091c",
+    "accountId": "acc_104",
+    "merchantTxRef": "MERCH_TXN_1041",
+    "sessionId": "NMB_301247",
+    "destinationBankCode": [
+      "054"
+    ],
+    "amount": 348100,
+    "settlementMatch": "exact",
+    "state": "settled",
+    "direction": "credit",
+    "createdAt": "2026-07-02T07:29:42.886144Z",
+    "lastCheckedAt": "2026-07-02T07:30:42.886144Z"
+  },
+  {
+    "id": "590f4e3a-80e7-4d3b-a6a3-32cd8a6986a7",
+    "accountId": "acc_100",
+    "merchantTxRef": "MERCH_TXN_1042",
+    "sessionId": "NMB_237043",
+    "destinationBankCode": [
+      "042"
+    ],
+    "amount": 4801600,
+    "settlementMatch": "exact",
+    "state": "settled",
+    "direction": "debit",
+    "createdAt": "2026-07-02T07:30:42.886189Z",
+    "lastCheckedAt": "2026-07-02T07:31:42.886189Z"
+  },
+  {
+    "id": "d970cf9e-f8be-4a21-a8c5-2badc4208bed",
+    "accountId": "acc_100",
+    "merchantTxRef": "MERCH_TXN_1043",
+    "sessionId": "NMB_445108",
+    "destinationBankCode": [
+      "022"
+    ],
+    "amount": 1111600,
+    "settlementMatch": "exact",
+    "state": "settled",
+    "direction": "debit",
+    "createdAt": "2026-07-02T07:31:42.886223Z",
+    "lastCheckedAt": "2026-07-02T07:32:42.886223Z"
+  },
+  {
+    "id": "613ff637-5b1a-4cd1-a543-2b6d5ee6b7de",
+    "accountId": "acc_100",
+    "merchantTxRef": "MERCH_TXN_1044",
+    "sessionId": "NMB_262901",
+    "destinationBankCode": [
+      "042"
+    ],
+    "amount": 1670300,
+    "settlementMatch": "exact",
+    "state": "settled",
+    "direction": "credit",
+    "createdAt": "2026-07-02T07:32:42.886258Z",
+    "lastCheckedAt": "2026-07-02T07:33:42.886258Z"
+  },
+  {
+    "id": "e475d7b5-a8e9-493f-9d14-851b4c9e4785",
+    "accountId": "acc_100",
+    "merchantTxRef": "MERCH_TXN_1045",
+    "sessionId": "NMB_469666",
+    "destinationBankCode": [
+      "054"
+    ],
+    "amount": 3170700,
+    "settlementMatch": "exact",
+    "state": "settled",
+    "direction": "credit",
+    "createdAt": "2026-07-02T07:33:42.886292Z",
+    "lastCheckedAt": "2026-07-02T07:35:42.886292Z"
+  },
+  {
+    "id": "121771e0-0dba-4e3f-9b3f-c228bb30bc75",
+    "accountId": "acc_104",
+    "merchantTxRef": "MERCH_TXN_1046",
+    "sessionId": "NMB_851494",
+    "destinationBankCode": [
+      "042"
+    ],
+    "amount": 2702400,
+    "settlementMatch": "exact",
+    "state": "settled",
+    "direction": "credit",
+    "createdAt": "2026-07-02T07:34:42.886326Z",
+    "lastCheckedAt": "2026-07-02T07:36:42.886326Z"
+  },
+  {
+    "id": "15921ee9-a9d9-4899-b9a6-0e6fbc3ce974",
+    "accountId": "acc_103",
+    "merchantTxRef": "MERCH_TXN_1047",
+    "sessionId": "NMB_381398",
+    "destinationBankCode": [
+      "042"
+    ],
+    "amount": 4067000,
+    "settlementMatch": "exact",
+    "state": "settled",
+    "direction": "credit",
+    "createdAt": "2026-07-02T07:35:42.886360Z",
+    "lastCheckedAt": "2026-07-02T07:38:42.886360Z"
+  },
+  {
+    "id": "7e88dfc2-3a1e-43eb-aebd-4e63ca307097",
+    "accountId": "acc_100",
+    "merchantTxRef": "MERCH_TXN_1048",
+    "sessionId": "NMB_814680",
+    "destinationBankCode": [
+      "054"
+    ],
+    "amount": 1505300,
+    "settlementMatch": "exact",
+    "state": "settled",
+    "direction": "credit",
+    "createdAt": "2026-07-02T07:36:42.886395Z",
+    "lastCheckedAt": "2026-07-02T07:39:42.886395Z"
+  },
+  {
+    "id": "36dc9ee5-a19b-4976-8b3d-607b29ba214f",
+    "accountId": "acc_103",
+    "merchantTxRef": "MERCH_TXN_1049",
+    "sessionId": "NMB_904436",
+    "destinationBankCode": [
+      "054"
+    ],
+    "amount": 2368100,
+    "settlementMatch": "exact",
+    "state": "settled",
+    "direction": "debit",
+    "createdAt": "2026-07-02T07:37:42.886429Z",
+    "lastCheckedAt": "2026-07-02T07:39:42.886429Z"
+  }
+]
