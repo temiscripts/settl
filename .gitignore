@@ -4,3 +4,7 @@ dev.db
 dev.db-journal
 prisma/migrations/
 dist/
+*.log
+DEVLOG.md
+CLAUDE.md
+progress.md
