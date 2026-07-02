@@ -2,7 +2,7 @@
 
 const { Router } = require('express');
 const { PrismaClient } = require('@prisma/client');
-const { getWebhookQueue, getRedisConnection } = require('../queues/webhookQueue');
+const { getWebhookQueue, connection: redisConnection } = require('../queues/webhookQueue');
 const { getCircuitBreakerStates } = require('../services/nomba');
 const logger = require('../lib/logger');
 
@@ -29,20 +29,7 @@ router.get('/health', async (req, res) => {
   }
 
   try {
-    const Redis = require('ioredis');
-    const conn = getRedisConnection();
-    const redis = new Redis({
-      ...conn,
-      lazyConnect: true,
-      connectTimeout: 3000,
-      maxRetriesPerRequest: 0,
-      enableOfflineQueue: false,
-    });
-    await withTimeout(
-      redis.connect().then(() => redis.ping()).then(() => redis.quit()),
-      4000,
-      'redis'
-    );
+    await withTimeout(redisConnection.ping(), 4000, 'redis');
     checks.redis = { status: 'ok' };
   } catch (err) {
     checks.redis = { status: 'error', message: err.message };
