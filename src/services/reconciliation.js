@@ -8,6 +8,8 @@ const logger = require('../lib/logger');
 
 const prisma = new PrismaClient();
 
+const TX_TIMEOUT = 15000;
+
 function computeSettlementMatch(receivedAmount, expectedAmount) {
   if (expectedAmount == null) return null;
   if (receivedAmount === expectedAmount) return 'exact';
@@ -69,7 +71,7 @@ async function processWebhookJob(job) {
         tx
       );
     }
-  });
+  }, { timeout: TX_TIMEOUT });
 
   logger.info(
     { merchantTxRef, amount, settlementMatch, settled: settleImmediately },
@@ -93,7 +95,7 @@ async function resolveTransaction(transaction, nombaStatus) {
         { merchantTxRef, from: state, to: 'settled', source: 'requery' },
         tx
       );
-    });
+    }, { timeout: TX_TIMEOUT });
     logger.info({ merchantTxRef, accountId }, 'transaction settled via requery');
     return 'settled';
   }
@@ -110,7 +112,7 @@ async function resolveTransaction(transaction, nombaStatus) {
         { merchantTxRef, from: state, to: 'failed', source: 'requery' },
         tx
       );
-    });
+    }, { timeout: TX_TIMEOUT });
     logger.info({ merchantTxRef, accountId }, 'transaction failed — triggering reversal');
     await initiateAutoReversal(transaction);
     return 'reversed';
@@ -133,7 +135,7 @@ async function initiateAutoReversal(transaction) {
       { merchantTxRef, from: 'failed', to: 'reversing' },
       tx
     );
-  });
+  }, { timeout: TX_TIMEOUT });
 
   try {
     // X-Idempotency-Key is set inside initiateReversal as `${merchantTxRef}:reversal`
@@ -147,7 +149,7 @@ async function initiateAutoReversal(transaction) {
         { merchantTxRef, from: 'reversing', to: 'reversed' },
         tx
       );
-    });
+    }, { timeout: TX_TIMEOUT });
     logger.info({ merchantTxRef }, 'reversal complete');
   } catch (err) {
     logger.error({ err, merchantTxRef }, 'reversal call failed — state stays reversing, will retry');
