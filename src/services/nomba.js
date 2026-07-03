@@ -26,8 +26,8 @@ let tokenExpiresAt = 0;
 async function issueToken() {
   const res = await axios.post(
     `${BASE_URL}/auth/token/issue`,
-    { grant_type: 'client_credentials', clientId: CLIENT_ID, secret: CLIENT_SECRET },
-    { timeout: 5000 }
+    { grant_type: 'client_credentials', client_id: CLIENT_ID, client_secret: CLIENT_SECRET },
+    { timeout: 5000, headers: { 'Content-Type': 'application/json', accountId: PARENT_ACCOUNT_ID } }
   );
   const { access_token, refresh_token } = res.data.data;
   cachedToken = access_token;
@@ -44,7 +44,7 @@ async function doTokenRefresh() {
     const res = await axios.post(
       `${BASE_URL}/auth/token/refresh`,
       { refresh_token: refreshToken },
-      { timeout: 5000 }
+      { timeout: 5000, headers: { 'Content-Type': 'application/json', accountId: PARENT_ACCOUNT_ID } }
     );
     const { access_token, refresh_token: newRefreshToken } = res.data.data;
     cachedToken = access_token;
