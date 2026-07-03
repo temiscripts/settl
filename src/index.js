@@ -9,6 +9,7 @@ const errorHandler = require('./middleware/errorHandler');
 const healthRouter = require('./routes/health');
 const webhooksRouter = require('./routes/webhooks');
 const { getWebhookQueue } = require('./queues/webhookQueue');
+const { startReconciliationWorker } = require('./workers/reconciliationWorker');
 const logger = require('./lib/logger');
 
 const app = express();
@@ -17,12 +18,6 @@ const PORT = process.env.PORT || 3000;
 
 // requestId must be first as every subsequent middleware needs req.requestId
 app.use(requestId);
-
-// Raw body for the webhook path BEFORE express.json().
-// express.raw sets req._body=true which signals express.json to skip this request.
-// If express.json ran first it would consume the stream; HMAC would then compute
-// over a re-serialized string, not Nomba's original bytes and this would never match.
-app.use('/v1/webhooks/nomba', express.raw({ type: 'application/json', limit: '10kb' }));
 
 app.use(express.json({ limit: '10kb' }));
 
@@ -40,13 +35,17 @@ process.on('uncaughtException', (err) => {
 });
 
 async function start() {
+  const { webhookWorker, interval } = startReconciliationWorker();
+
   const server = app.listen(PORT, () => {
     logger.info({ port: PORT, env: process.env.NODE_ENV }, 'settl server started');
   });
 
   async function shutdown(signal) {
     logger.info({ signal }, 'shutdown signal received — draining');
+    clearInterval(interval);
     server.close(async () => {
+      await webhookWorker.close();
       const queue = getWebhookQueue();
       await queue.close();
       await prisma.$disconnect();
