@@ -1,0 +1,157 @@
+'use strict';
+
+const { PrismaClient } = require('@prisma/client');
+const { validateStateTransition } = require('../lib/stateTransitions');
+const { appendAuditEntry } = require('./auditLog');
+const { initiateReversal } = require('./nomba');
+const logger = require('../lib/logger');
+
+const prisma = new PrismaClient();
+
+function computeSettlementMatch(receivedAmount, expectedAmount) {
+  if (expectedAmount == null) return null;
+  if (receivedAmount === expectedAmount) return 'exact';
+  if (receivedAmount < expectedAmount) return 'underpaid';
+  return 'overpaid';
+}
+
+// Called by the BullMQ worker for each dequeued webhook job.
+async function processWebhookJob(job) {
+  const { merchantTxRef, sessionId, amount, accountId } = job.data;
+
+  const account = await prisma.account.findUnique({ where: { id: accountId } });
+  if (!account) throw new Error(`Account not found: ${accountId}`);
+
+  const settlementMatch = computeSettlementMatch(amount, account.expectedAmount);
+
+  // underpaid payments stay pending (top-up expected); everything else settles
+  const settleImmediately = settlementMatch !== 'underpaid';
+
+  await prisma.$transaction(async (tx) => {
+    const txRecord = await tx.transaction.create({
+      data: {
+        accountId,
+        merchantTxRef,
+        sessionId: sessionId || null,
+        amount,
+        direction: 'credit',
+        state: 'initiated',
+        settlementMatch,
+      },
+    });
+
+    await appendAuditEntry(
+      'WEBHOOK_RECEIVED',
+      { merchantTxRef, amount, settlementMatch, accountId },
+      tx
+    );
+
+    validateStateTransition('initiated', 'pending');
+    await tx.transaction.update({
+      where: { id: txRecord.id },
+      data: { state: 'pending', lastCheckedAt: new Date() },
+    });
+    await appendAuditEntry(
+      'STATE_TRANSITION',
+      { merchantTxRef, from: 'initiated', to: 'pending' },
+      tx
+    );
+
+    if (settleImmediately) {
+      validateStateTransition('pending', 'settled');
+      await tx.transaction.update({
+        where: { id: txRecord.id },
+        data: { state: 'settled' },
+      });
+      await appendAuditEntry(
+        'STATE_TRANSITION',
+        { merchantTxRef, from: 'pending', to: 'settled', settlementMatch },
+        tx
+      );
+    }
+  });
+
+  logger.info(
+    { merchantTxRef, amount, settlementMatch, settled: settleImmediately },
+    'webhook job processed'
+  );
+}
+
+// Called by the reconciliation worker when Nomba's requery returns a terminal state.
+async function resolveTransaction(transaction, nombaStatus) {
+  const { id, merchantTxRef, accountId, state } = transaction;
+
+  if (nombaStatus === 'settled') {
+    validateStateTransition(state, 'settled');
+    await prisma.$transaction(async (tx) => {
+      await tx.transaction.update({
+        where: { id },
+        data: { state: 'settled', lastCheckedAt: new Date() },
+      });
+      await appendAuditEntry(
+        'STATE_TRANSITION',
+        { merchantTxRef, from: state, to: 'settled', source: 'requery' },
+        tx
+      );
+    });
+    logger.info({ merchantTxRef, accountId }, 'transaction settled via requery');
+    return 'settled';
+  }
+
+  if (nombaStatus === 'failed') {
+    validateStateTransition(state, 'failed');
+    await prisma.$transaction(async (tx) => {
+      await tx.transaction.update({
+        where: { id },
+        data: { state: 'failed', lastCheckedAt: new Date() },
+      });
+      await appendAuditEntry(
+        'STATE_TRANSITION',
+        { merchantTxRef, from: state, to: 'failed', source: 'requery' },
+        tx
+      );
+    });
+    logger.info({ merchantTxRef, accountId }, 'transaction failed — triggering reversal');
+    await initiateAutoReversal(transaction);
+    return 'reversed';
+  }
+
+  return 'pending';
+}
+
+// Initiates and (if successful) completes an automatic reversal.
+// If Nomba's reversal call fails, leaves the transaction in 'reversing' so
+// the reconciliation worker retries on its next cycle.
+async function initiateAutoReversal(transaction) {
+  const { id, merchantTxRef, amount } = transaction;
+
+  validateStateTransition('failed', 'reversing');
+  await prisma.$transaction(async (tx) => {
+    await tx.transaction.update({ where: { id }, data: { state: 'reversing' } });
+    await appendAuditEntry(
+      'STATE_TRANSITION',
+      { merchantTxRef, from: 'failed', to: 'reversing' },
+      tx
+    );
+  });
+
+  try {
+    // X-Idempotency-Key is set inside initiateReversal as `${merchantTxRef}:reversal`
+    await initiateReversal({ amount }, merchantTxRef);
+
+    validateStateTransition('reversing', 'reversed');
+    await prisma.$transaction(async (tx) => {
+      await tx.transaction.update({ where: { id }, data: { state: 'reversed' } });
+      await appendAuditEntry(
+        'STATE_TRANSITION',
+        { merchantTxRef, from: 'reversing', to: 'reversed' },
+        tx
+      );
+    });
+    logger.info({ merchantTxRef }, 'reversal complete');
+  } catch (err) {
+    logger.error({ err, merchantTxRef }, 'reversal call failed — state stays reversing, will retry');
+  }
+}
+
+module.exports = { processWebhookJob, resolveTransaction, initiateAutoReversal };
