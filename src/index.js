@@ -8,6 +8,8 @@ const requestId = require('./middleware/requestId');
 const errorHandler = require('./middleware/errorHandler');
 const healthRouter = require('./routes/health');
 const webhooksRouter = require('./routes/webhooks');
+const accountsRouter = require('./routes/accounts');
+
 const { getWebhookQueue } = require('./queues/webhookQueue');
 const { startReconciliationWorker } = require('./workers/reconciliationWorker');
 const logger = require('./lib/logger');
@@ -23,6 +25,7 @@ app.use(express.json({ limit: '10kb' }));
 
 app.use('/v1', healthRouter);
 app.use('/v1', webhooksRouter);
+app.use('/v1', accountsRouter);
 
 app.use(errorHandler);
 
