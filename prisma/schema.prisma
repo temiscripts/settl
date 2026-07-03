@@ -10,6 +10,9 @@ datasource db {
 model Account {
   id                    String        @id @default(uuid())
   nombaVirtualAccountId String
+  bankAccountNumber     String?
+  bankName              String?
+  bankAccountName       String?
   customerName          String
   accountRef            String        @unique
   expectedAmount        Int?
