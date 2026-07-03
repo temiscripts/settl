@@ -7,17 +7,20 @@ const { createCircuitBreaker } = require('../lib/circuitBreaker');
 const logger = require('../lib/logger');
 
 const BASE_URL = process.env.NOMBA_BASE_URL;
+// v2 base derived from v1 — transfers live under /v2, everything else /v1
+const BASE_URL_V2 = BASE_URL?.replace('/v1', '/v2');
 const PARENT_ACCOUNT_ID = process.env.NOMBA_PARENT_ACCOUNT_ID;
+const SUB_ACCOUNT_ID = process.env.NOMBA_SUB_ACCOUNT_ID;
 const CLIENT_ID = process.env.NOMBA_CLIENT_ID;
 const CLIENT_SECRET = process.env.NOMBA_CLIENT_SECRET;
 
-// accountId in the REQUEST HEADER must always be the PARENT account ID.
-// accountId in the request BODY or QUERY PARAMS is the sub-account ID.
+// accountId header must always be the PARENT account ID per Nomba docs.
+// The sub-account is scoped via {subAccountId} in the path param instead.
 const NOMBA_HEADERS = () => ({ accountId: PARENT_ACCOUNT_ID });
 
 let cachedToken = null;
 let refreshToken = null;
-// We subtract 60s to refresh before the window closes rather than after.
+// Subtract 60s to refresh before the window closes rather than after.
 let tokenExpiresAt = 0;
 
 async function issueToken() {
@@ -60,11 +63,11 @@ async function getToken() {
   return cachedToken;
 }
 
-async function nombaRequest(method, path, data, extraHeaders = {}) {
+async function nombaRequest(method, path, data, extraHeaders = {}, baseUrl = BASE_URL) {
   const token = await getToken();
   const res = await axios({
     method,
-    url: `${BASE_URL}${path}`,
+    url: `${baseUrl}${path}`,
     data,
     timeout: 5000,
     headers: {
@@ -77,11 +80,11 @@ async function nombaRequest(method, path, data, extraHeaders = {}) {
   return res.data;
 }
 
-async function nombaRequestWithRetry(method, path, data, extraHeaders) {
+async function nombaRequestWithRetry(method, path, data, extraHeaders, baseUrl) {
   return retry(
     async (bail, attempt) => {
       try {
-        return await nombaRequest(method, path, data, extraHeaders);
+        return await nombaRequest(method, path, data, extraHeaders, baseUrl);
       } catch (err) {
         if (err.response?.status >= 400 && err.response?.status < 500) {
           bail(err);
@@ -98,7 +101,7 @@ async function nombaRequestWithRetry(method, path, data, extraHeaders) {
 }
 
 const createVirtualAccountBreaker = createCircuitBreaker(
-  (data) => nombaRequestWithRetry('POST', '/accounts/virtual', data),
+  (data) => nombaRequestWithRetry('POST', `/accounts/virtual/${SUB_ACCOUNT_ID}`, data),
   'createVirtualAccount'
 );
 
@@ -109,7 +112,7 @@ const requeryBreaker = createCircuitBreaker(
 
 const reversalBreaker = createCircuitBreaker(
   ({ data, idempotencyKey }) =>
-    nombaRequestWithRetry('POST', '/transfers', data, { 'X-Idempotency-Key': idempotencyKey }),
+    nombaRequestWithRetry('POST', `/transfers/bank/${SUB_ACCOUNT_ID}`, data, { 'X-Idempotency-Key': idempotencyKey }, BASE_URL_V2),
   'initiateReversal'
 );
 
