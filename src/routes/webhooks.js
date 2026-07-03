@@ -1,6 +1,5 @@
 'use strict';
 
-const express = require('express');
 const { Router } = require('express');
 const { PrismaClient } = require('@prisma/client');
 const { getWebhookQueue } = require('../queues/webhookQueue');
@@ -10,49 +9,76 @@ const logger = require('../lib/logger');
 const router = Router();
 const prisma = new PrismaClient();
 
-// Raw body intentionally preserved here. The HMAC verification requires the exact bytes
-// Nomba sent. express.json() would re-serialize and change whitespace, breaking the hash.
-router.post(
-  '/webhooks/nomba',
-  webhookRateLimiter,
-  express.raw({ type: 'application/json' }),
-  async (req, res) => {
-    const rawBody = req.body;
-    const signature = req.headers['nomba-signature'];
+// 10-minute replay window with 30s tolerance for clock skew between
+// our server and Nomba's
+const REPLAY_WINDOW_MS = (10 * 60 + 30) * 1000;
 
-    // TODO(cybersecurity): replace this stub call with real HMAC verification
-    // verifyWebhookSignature(rawBody, signature) should throw or return false on invalid sig
-    // For now we log and proceed. The HMAC enforcement happens once cybersecurity wires it in
-    logger.info({ requestId: req.requestId, signature }, 'webhook received');
+router.post('/webhooks/nomba', webhookRateLimiter, async (req, res) => {
+  const timestamp = req.headers['nomba-timestamp'];
 
-    let payload;
-    try {
-      payload = JSON.parse(rawBody.toString('utf8'));
-    } catch {
-      return res.status(400).json({ error: 'Invalid JSON body' });
-    }
+  const ts = parseInt(timestamp, 10);
+  if (!ts || isNaN(ts) || Date.now() - ts > REPLAY_WINDOW_MS) {
+    logger.warn({ requestId: req.requestId, timestamp }, 'webhook rejected — missing or stale timestamp');
+    return res.status(400).json({ error: 'Invalid or expired webhook timestamp' });
+  }
 
-    const merchantTxRef = payload?.data?.merchantTxRef || payload?.merchantTxRef;
-    if (!merchantTxRef) {
-      return res.status(400).json({ error: 'Missing merchantTxRef' });
-    }
+  // TODO(cybersecurity): replace this no-op with real HMAC verification.
+  // Signature string (colon-joined): event_type:requestId:merchant.userId:merchant.walletId:
+  //   transaction.transactionId:transaction.type:transaction.time:transaction.responseCode:nomba-timestamp
+  // HMAC-SHA256 with key NombaHackathon2026, base64-encoded, compared against req.headers['nomba-signature'].
+  // Expected call: verifyWebhookSignature(req.body, req.headers) → throws on invalid signature
 
-    const existing = await prisma.transaction.findUnique({
-      where: { merchantTxRef },
-    });
-    if (existing) {
-      logger.info({ requestId: req.requestId, merchantTxRef }, 'duplicate webhook — ignoring');
-      return res.status(200).json({ received: true });
-    }
+  const payload = req.body;
+  const eventType = payload?.event_type;
+  const tx = payload?.data?.transaction ?? {};
+  const merchant = payload?.data?.merchant ?? {};
 
-    const queue = getWebhookQueue();
-    await queue.add('process-webhook', { payload, rawBody: rawBody.toString('utf8') }, {
-      jobId: merchantTxRef,
-    });
+  const transactionId = tx.transactionId;
+  const amount = tx.amount;
+  // accountRef is set on the virtual account at provisioning time and echoed back
+  // in the webhook so we can match the payment to the right internal account.
+  // Fallback to merchant.walletId if accountRef is absent. Log full payload on
+  // first real webhook to confirm which field Nomba actually uses.
+  const accountRef = tx.accountRef ?? tx.destinationAccountRef ?? merchant.walletId;
 
-    logger.info({ requestId: req.requestId, merchantTxRef }, 'webhook queued for processing');
+  if (!transactionId || !accountRef || amount == null) {
+    logger.warn({ requestId: req.requestId, eventType, payload }, 'webhook missing required fields');
+    return res.status(400).json({ error: 'Missing required webhook fields' });
+  }
+
+  const existing = await prisma.transaction.findUnique({ where: { merchantTxRef: transactionId } });
+  if (existing) {
+    logger.info({ requestId: req.requestId, transactionId }, 'duplicate webhook — ignoring');
     return res.status(200).json({ received: true });
   }
-);
+
+  const account = await prisma.account.findFirst({
+    where: {
+      OR: [
+        { accountRef },
+        { nombaVirtualAccountId: accountRef },
+      ],
+    },
+  });
+  if (!account) {
+    logger.error({ requestId: req.requestId, accountRef, payload }, 'no account matched webhook');
+    return res.status(404).json({ error: 'Account not found' });
+  }
+
+  const queue = getWebhookQueue();
+  await queue.add(
+    'process-webhook',
+    {
+      merchantTxRef: transactionId,
+      sessionId: transactionId,
+      amount,
+      accountId: account.id,
+    },
+    { jobId: transactionId }
+  );
+
+  logger.info({ requestId: req.requestId, transactionId, accountId: account.id, eventType }, 'webhook queued');
+  return res.status(200).json({ received: true });
+});
 
 module.exports = router;
