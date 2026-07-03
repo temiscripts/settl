@@ -21,6 +21,7 @@ async function createAccount(data) {
   const nombaRes = await nomba.createVirtualAccount({
     accountName: parsed.customerName,
     accountRef: parsed.accountRef,
+    currency: 'NGN',
     ...(parsed.expectedAmount !== undefined && { expectedAmount: parsed.expectedAmount }),
     ...(parsed.expiryDate !== undefined && { expiryDate: parsed.expiryDate }),
   });
@@ -30,7 +31,10 @@ async function createAccount(data) {
   const account = await prisma.$transaction(async (tx) => {
     const created = await tx.account.create({
       data: {
-        nombaVirtualAccountId: virtualAccountData.accountId || virtualAccountData.id,
+        nombaVirtualAccountId: virtualAccountData.bankAccountNumber,
+        bankAccountNumber: virtualAccountData.bankAccountNumber,
+        bankName: virtualAccountData.bankName,
+        bankAccountName: virtualAccountData.bankAccountName,
         customerName: parsed.customerName,
         accountRef: parsed.accountRef,
         expectedAmount: parsed.expectedAmount ?? null,
