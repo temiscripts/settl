@@ -75,6 +75,11 @@ router.post(
       return res.status(404).json({ error: 'Account not found' });
     }
 
+    // Extract sender details if Nomba includes them (field names vary across event types)
+    const senderAccountName   = tx.senderName ?? tx.customerName ?? tx.sourceAccountName ?? null;
+    const senderAccountNumber = tx.senderAccountNumber ?? tx.customerAccountNumber ?? tx.sourceAccountNumber ?? null;
+    const senderBankCode      = tx.senderBankCode ?? tx.sourceBankCode ?? tx.bankCode ?? null;
+
     const queue = getWebhookQueue();
     await queue.add(
       'process-webhook',
@@ -83,6 +88,9 @@ router.post(
         sessionId: transactionId,
         amount,
         accountId: account.id,
+        senderAccountName,
+        senderAccountNumber,
+        senderBankCode,
       },
       { jobId: transactionId }
     );

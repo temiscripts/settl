@@ -19,7 +19,8 @@ function computeSettlementMatch(receivedAmount, expectedAmount) {
 
 // Called by the BullMQ worker for each dequeued webhook job.
 async function processWebhookJob(job) {
-  const { merchantTxRef, sessionId, amount, accountId } = job.data;
+  const { merchantTxRef, sessionId, amount, accountId,
+          senderAccountName, senderAccountNumber, senderBankCode } = job.data;
 
   const account = await prisma.account.findUnique({ where: { id: accountId } });
   if (!account) throw new Error(`Account not found: ${accountId}`);
@@ -39,6 +40,9 @@ async function processWebhookJob(job) {
         direction: 'credit',
         state: 'initiated',
         settlementMatch,
+        senderAccountName:   senderAccountName   || null,
+        senderAccountNumber: senderAccountNumber || null,
+        senderBankCode:      senderBankCode      || null,
       },
     });
 
@@ -125,7 +129,8 @@ async function resolveTransaction(transaction, nombaStatus) {
 // If Nomba's reversal call fails, leaves the transaction in 'reversing' so
 // the reconciliation worker retries on its next cycle.
 async function initiateAutoReversal(transaction) {
-  const { id, merchantTxRef, amount } = transaction;
+  const { id, merchantTxRef, amount,
+          senderAccountName, senderAccountNumber, senderBankCode } = transaction;
 
   validateStateTransition('failed', 'reversing');
   await prisma.$transaction(async (tx) => {
@@ -137,9 +142,26 @@ async function initiateAutoReversal(transaction) {
     );
   }, { timeout: TX_TIMEOUT });
 
+  if (!senderAccountName || !senderAccountNumber || !senderBankCode) {
+    logger.warn(
+      { merchantTxRef },
+      'reversal skipped — sender bank details not captured from webhook; stays reversing for manual review'
+    );
+    return;
+  }
+
   try {
     // X-Idempotency-Key is set inside initiateReversal as `${merchantTxRef}:reversal`
-    await initiateReversal({ amount }, merchantTxRef);
+    await initiateReversal(
+      {
+        amount,
+        merchantTxRef: `${merchantTxRef}:reversal`,
+        accountName:   senderAccountName,
+        accountNumber: senderAccountNumber,
+        bankCode:      senderBankCode,
+      },
+      merchantTxRef
+    );
 
     validateStateTransition('reversing', 'reversed');
     await prisma.$transaction(async (tx) => {
