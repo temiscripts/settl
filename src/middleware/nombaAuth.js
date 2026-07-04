@@ -11,28 +11,22 @@ function verifyNombaSignature(req, res, next) {
     console.error("❌ Configuration Error: NOMBA_WEBHOOK_SECRET is missing in environment variables.");
     return res.status(500).json({ error: 'Missing security configuration.' });
   }
-  if (!nombaSignature) {
-    return res.status(401).json({ error: 'Missing signature header.' });
+  if (!nombaSignature || !timestamp) {
+    return res.status(401).json({ error: 'Missing signature or timestamp headers.' });
   }
 
   try {
-    
+    // req.body is a raw Buffer because of express.raw() in the route
     const rawStringBody = Buffer.isBuffer(req.body) ? req.body.toString('utf8') : JSON.stringify(req.body);
 
-   
-    const calculatedHmacRaw = crypto
-      .createHmac('sha256', secret)
-      .update(rawStringBody)
-      .digest('base64');
-
-    
     let parsedJson = {};
     try { 
       parsedJson = JSON.parse(rawStringBody); 
     } catch (e) {
-     
+      return res.status(400).json({ error: 'Invalid JSON body.' });
     }
     
+    // Build the hashing payload exactly as Nomba signs it (Colon-Matrix)
     const hashingPayload = [
       parsedJson.event_type || parsedJson.event || '',
       parsedJson.requestId || '',
@@ -43,34 +37,24 @@ function verifyNombaSignature(req, res, next) {
       parsedJson.data?.transaction?.time || '',
       parsedJson.data?.transaction?.responseCode || ''
     ].join(':');
-    const matrixMessage = `${hashingPayload}:${timestamp}`;
     
-    const calculatedHmacMatrix = crypto
+    const message = `${hashingPayload}:${timestamp}`;
+    
+    const calculatedHmac = crypto
       .createHmac('sha256', secret)
-      .update(matrixMessage)
+      .update(message)
       .digest('base64');
 
-   
-    console.log("\n🔍 --- TEAM WORKSPACE SIGNATURE DUEL ---");
-    console.log("RECEIVED SIGNATURE :", nombaSignature);
-    console.log("STRATEGY A (RAW)   :", calculatedHmacRaw);
-    console.log("STRATEGY B (MATRIX):", calculatedHmacMatrix);
-    console.log("------------------------------------------\n");
-
     const receivedBuffer = Buffer.from(nombaSignature, 'utf8');
-    const bufRaw = Buffer.from(calculatedHmacRaw, 'utf8');
-    const bufMatrix = Buffer.from(calculatedHmacMatrix, 'utf8');
+    const trustedBuffer = Buffer.from(calculatedHmac, 'utf8');
 
-   
-    const passRaw = bufRaw.length === receivedBuffer.length && crypto.timingSafeEqual(bufRaw, receivedBuffer);
-    const passMatrix = bufMatrix.length === receivedBuffer.length && crypto.timingSafeEqual(bufMatrix, receivedBuffer);
-
-    if (!passRaw && !passMatrix) {
-      console.log("⚠️ Webhook Blocked: Digital signatures mismatch.");
+    // Constant-time comparison to prevent timing attacks
+    if (trustedBuffer.length !== receivedBuffer.length || !crypto.timingSafeEqual(trustedBuffer, receivedBuffer)) {
+      console.log("⚠️ Webhook Blocked: Invalid HMAC signature.");
       return res.status(401).json({ error: 'Invalid HMAC signature.' });
     }
 
-  
+    // Attach parsed JSON down the line so the route handler doesn't have to parse it twice
     req.parsedWebhookBody = parsedJson;
     next();
   } catch (error) {
