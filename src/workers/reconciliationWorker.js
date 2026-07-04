@@ -90,8 +90,14 @@ async function runReconciliationCycle() {
         const outcome = await resolveTransaction(tx, nombaStatus);
         if (outcome !== 'pending') resolved++;
       } catch (err) {
-        errors++;
-        logger.error({ err, merchantTxRef: tx.merchantTxRef }, 'reconciliation cycle error on transaction');
+        if (err.response?.status === 404) {
+          // Nomba has no record of this sessionId — expected for synthetic test
+          // transactions. Not a service failure; backoff will keep retries sparse.
+          logger.warn({ merchantTxRef: tx.merchantTxRef }, 'nomba requery 404 — transaction unknown to nomba, skipping this cycle');
+        } else {
+          errors++;
+          logger.error({ err, merchantTxRef: tx.merchantTxRef }, 'reconciliation cycle error on transaction');
+        }
       }
     }
   } catch (err) {
