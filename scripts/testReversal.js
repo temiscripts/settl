@@ -68,7 +68,7 @@ async function main() {
     await initiateAutoReversal(failedTx);
   } catch (err) {
     // initiateAutoReversal handles its own errors internally and leaves
-    // state as 'reversing' on failure — this catch is a safety net only
+    // state as 'reversing' on failure
     console.log(`  Outer catch (unexpected): ${err.message}`);
   }
 

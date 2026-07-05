@@ -26,7 +26,6 @@ const CONCURRENCY  = parseInt(process.argv[3], 10) || 50;
 const TOTAL        = parseInt(process.argv[4], 10) || 500;
 const SECRET       = process.env.NOMBA_WEBHOOK_SECRET || 'NombaHackathon2026';
 
-// A real account that exists in the database — update if needed
 const TEST_ACCOUNT_REF = process.env.LOAD_TEST_ACCOUNT_REF || 'settl-acc-july03b';
 const TEST_WALLET_ID   = process.env.NOMBA_SUB_ACCOUNT_ID  || '1dde5fef-fa76-44b9-8b84-541b34b85b3e';
 
