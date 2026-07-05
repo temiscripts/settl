@@ -23,19 +23,22 @@ model Account {
 }
 
 model Transaction {
-  id              String    @id @default(uuid())
-  accountId       String
-  merchantTxRef   String    @unique
-  sessionId       String?
-  amount          Int
-  direction       String
-  state           String    @default("initiated")
-  settlementMatch String?
-  failureReason   String?
-  createdAt       DateTime  @default(now())
-  lastCheckedAt   DateTime?
-  requeueCount    Int       @default(0)
-  account         Account   @relation(fields: [accountId], references: [id])
+  id                  String    @id @default(uuid())
+  accountId           String
+  merchantTxRef       String    @unique
+  sessionId           String?
+  amount              Int
+  direction           String
+  state               String    @default("initiated")
+  settlementMatch     String?
+  failureReason       String?
+  senderAccountName   String?
+  senderAccountNumber String?
+  senderBankCode      String?
+  createdAt           DateTime  @default(now())
+  lastCheckedAt       DateTime?
+  requeueCount        Int       @default(0)
+  account             Account   @relation(fields: [accountId], references: [id])
 
   @@index([state])
   @@index([accountId])

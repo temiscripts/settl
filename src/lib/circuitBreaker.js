@@ -7,6 +7,9 @@ const DEFAULT_OPTIONS = {
   timeout: 5000,
   errorThresholdPercentage: 50,
   resetTimeout: 30000,
+  // 4xx responses are business-level errors (not found, bad request, etc.) —
+  // they do not indicate a Nomba service outage and must not trip the breaker.
+  errorFilter: (err) => err.response?.status >= 400 && err.response?.status < 500,
 };
 
 function createCircuitBreaker(fn, name, options = {}) {

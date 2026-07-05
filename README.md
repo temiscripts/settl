@@ -2,9 +2,9 @@
 
 **Infrastructure layer for dedicated virtual account systems built on Nomba.**
 
-Settl provisions a unique bank account number per customer, ingests payment webhooks into an internal ledger, automatically reconciles pending transactions against Nomba's requery API, and reverses confirmed failures — all without the calling application writing any payment logic.
+Settl provisions a unique bank account number per customer, ingests payment webhooks into an internal ledger, automatically reconciles pending transactions against Nomba's requery API, and reverses confirmed failures, all without the calling application writing any payment logic.
 
-Built for the Nomba × DevCareer Hackathon 2026.
+Built for the Nomba x DevCareer Hackathon 2026.
 
 ---
 
@@ -18,6 +18,7 @@ Built for the Nomba × DevCareer Hackathon 2026.
 - [Deployment](#deployment)
 - [Production Engineering](#production-engineering)
 - [Transaction State Machine](#transaction-state-machine)
+- [Known Limitations](#known-limitations)
 - [Project Structure](#project-structure)
 
 ---
@@ -50,7 +51,7 @@ Built for the Nomba × DevCareer Hackathon 2026.
 
 **Key design decisions:**
 
-- The HTTP handler that receives Nomba webhooks does exactly three things: validate the request, check idempotency, enqueue the job. It never touches the database directly. This decouples acknowledgement from processing — Nomba's delivery never times out regardless of downstream latency.
+- The HTTP handler that receives Nomba webhooks does exactly three things: validate the request, check idempotency, enqueue the job. It never touches the database directly. This decouples acknowledgement from processing; Nomba's delivery never times out regardless of downstream latency.
 - Every Nomba API call is wrapped in a circuit breaker. If Nomba becomes degraded, the circuit opens and callers receive a `503` immediately rather than waiting for timeouts that would exhaust the database connection pool.
 - All state transitions are validated at the application layer before any database write. An illegal transition throws before the query runs.
 
@@ -70,8 +71,8 @@ Provisions a dedicated virtual bank account for a customer via Nomba.
 
 | Field | Type | Required | Description |
 |---|---|---|---|
-| `customerName` | string | Yes | Name of the account holder (1–100 chars) |
-| `accountRef` | string | Yes | Your internal unique reference (1–100 chars) |
+| `customerName` | string | Yes | Name of the account holder (1-100 chars) |
+| `accountRef` | string | Yes | Your internal unique reference (1-100 chars) |
 | `expectedAmount` | integer | No | Expected payment amount in **kobo**. Enables over/underpayment detection. |
 | `expiryDate` | ISO 8601 datetime | No | If set, the account is automatically marked expired after this time. |
 
@@ -166,7 +167,7 @@ The handler performs replay-attack prevention (rejects timestamps older than 10 
 
 #### `GET /v1/health`
 
-Active health check that pings all dependencies. Does not return `200` based on a hardcoded value — each check runs a real probe.
+Active health check that pings all dependencies. Does not return `200` based on a hardcoded value; each check runs a real probe.
 
 **Example response** `200 OK`
 ```json
@@ -204,7 +205,7 @@ Active health check that pings all dependencies. Does not return `200` based on 
 | `404` | Resource not found |
 | `409` | Duplicate `accountRef` (idempotency conflict) |
 | `422` | Semantically invalid input (e.g. negative amount) |
-| `503` | Circuit breaker open — Nomba API unavailable |
+| `503` | Circuit breaker open: Nomba API unavailable |
 | `500` | Unhandled server error |
 
 ---
@@ -269,7 +270,7 @@ Copy `.env.example` to `.env` and populate the values. Never commit `.env`.
 
 ## Running Tests
 
-Tests use Node.js's built-in `node:test` runner — no additional test framework is required.
+Tests use Node.js's built-in `node:test` runner with no additional test framework required.
 
 ```bash
 npm test
@@ -316,7 +317,7 @@ This applies any pending database migrations before the server accepts traffic.
 
 ### Circuit Breaker
 
-All three Nomba API call sites — virtual account creation, transaction requery, and reversal — are individually wrapped with [opossum](https://nodeshift.dev/opossum/) circuit breakers.
+All three Nomba API call sites (virtual account creation, transaction requery, and reversal) are individually wrapped with [opossum](https://nodeshift.dev/opossum/) circuit breakers.
 
 | Parameter | Value |
 |---|---|
@@ -328,17 +329,17 @@ When a circuit opens, callers receive a `503` immediately. Circuit state changes
 
 ### Retry with Jitter
 
-Every Nomba API call uses [async-retry](https://github.com/vercel/async-retry) with exponential backoff and random jitter. Jitter prevents all workers from retrying simultaneously after an outage, which would recreate the original spike.
+Every Nomba API call uses [async-retry](https://github.com/vercel/async-retry) with exponential backoff and random jitter. Jitter prevents all workers from retrying simultaneously after an outage, which would recreate the original load spike.
 
 ```
-delay = 2^(attempt - 1) × 1000ms + random(0, 1000ms)
+delay = 2^(attempt - 1) x 1000ms + random(0, 1000ms)
 ```
 
-4xx responses from Nomba bail immediately — they represent caller errors that retrying will not fix.
+4xx responses from Nomba bail immediately; they represent caller errors that retrying will not fix.
 
 ### Token Refresh Mutex
 
-The Nomba access token has a finite lifetime. Under concurrent load, multiple requests can detect expiry simultaneously. Without coordination, each would attempt a refresh — racing to write the same cached token.
+The Nomba access token has a finite lifetime. Under concurrent load, multiple requests can detect expiry simultaneously. Without coordination, each would attempt a refresh, racing to write the same cached token.
 
 A Promise-chain mutex ensures only one refresh runs at a time. All other callers wait on the same Promise and receive the token once it resolves. No request ever sees an expired token or triggers a redundant refresh call.
 
@@ -389,9 +390,9 @@ All logs are JSON emitted by [pino](https://getpino.io). Every log line produced
 ## Transaction State Machine
 
 ```
-initiated ──▶ pending ──▶ settled
-                    │
-                    └──▶ failed ──▶ reversing ──▶ reversed
+initiated ---> pending ---> settled
+                    |
+                    +---> failed ---> reversing ---> reversed
 ```
 
 `settled` and `reversed` are terminal. No transition out of either state is permitted. Any attempt to write an illegal transition throws at the application layer before the query is issued.
@@ -402,8 +403,24 @@ The `settlementMatch` field is recorded on every transaction:
 |---|---|
 | `exact` | Received amount matches `expectedAmount` |
 | `overpaid` | Received amount exceeds `expectedAmount` |
-| `underpaid` | Received amount is below `expectedAmount` — transaction stays pending |
+| `underpaid` | Received amount is below `expectedAmount`; transaction stays pending |
 | `null` | No `expectedAmount` was set on the account |
+
+---
+
+## Known Limitations
+
+Settl is deployed on Render's free tier for the purposes of this hackathon. This has concrete implications for throughput and scale that are worth being explicit about.
+
+**Single instance only.** The free tier runs one container. This means the reconciliation worker and BullMQ webhook worker share one process with no horizontal scaling. The architecture is designed to support multiple instances (stateless HTTP layer, Redis-backed queue, database-level idempotency), but the current deployment does not exercise that path.
+
+**No distributed locking.** If Settl were scaled to multiple instances, each instance would run its own reconciliation worker cycle, and two workers could attempt to requery and update the same pending transaction simultaneously. The correct solution is a distributed lock (such as Redlock over Redis) on each transaction during a reconciliation cycle. This is not implemented because with a single instance it is not needed. It is the first thing to add before horizontal scaling.
+
+**Reconciliation throughput is bounded.** The worker processes 50 pending transactions per 60-second cycle. At steady state this is more than sufficient for a hackathon deployment. A system with tens of thousands of concurrent pending transactions would require shorter cycles, higher batch sizes, and multiple worker instances behind the distributed lock described above.
+
+**Render free tier sleeps after inactivity.** The service spins down after periods of no traffic and takes a few seconds to cold-start on the next request. This is a hosting constraint, not an architectural one. A paid tier or a keep-alive ping service removes it entirely.
+
+**Webhook HMAC verification is incomplete.** The timestamp replay-attack check is implemented. Full field-based HMAC signature verification is stubbed and depends on the cybersecurity teammate's module. Until that is wired in, the webhook endpoint accepts any structurally valid payload.
 
 ---
 
@@ -412,7 +429,7 @@ The `settlementMatch` field is recorded on every transaction:
 ```
 settl/
 ├── prisma/
-│   └── schema.prisma               # Single schema — Account, Transaction, AuditLog
+│   └── schema.prisma               # Single schema: Account, Transaction, AuditLog
 ├── src/
 │   ├── index.js                    # Server entry point, graceful shutdown
 │   ├── middleware/
@@ -424,10 +441,10 @@ settl/
 │   │   ├── webhooks.js             # Inbound Nomba webhook receiver
 │   │   └── health.js               # Active health check
 │   ├── services/
-│   │   ├── nomba.js                # Nomba API client — auth, circuit breakers, retry
+│   │   ├── nomba.js                # Nomba API client: auth, circuit breakers, retry
 │   │   ├── provisioning.js         # Account creation, balance, transaction history
 │   │   ├── reconciliation.js       # Ledger write, settlement match, auto-reversal
-│   │   └── auditLog.js             # Audit log write (stub — in progress)
+│   │   └── auditLog.js             # Audit log write (stub, in progress)
 │   ├── workers/
 │   │   └── reconciliationWorker.js # BullMQ worker + 60s reconciliation cycle
 │   ├── queues/
