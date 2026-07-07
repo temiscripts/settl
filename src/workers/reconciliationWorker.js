@@ -87,7 +87,7 @@ async function runReconciliationCycle() {
         const nombaResult = await requeryTransaction(tx.sessionId);
         const nombaStatus = nombaResult?.data?.status?.toLowerCase();
 
-        const outcome = await resolveTransaction(tx, nombaStatus);
+        const outcome = await resolveTransaction(tx, nombaStatus, nombaResult);
         if (outcome !== 'pending') resolved++;
       } catch (err) {
         if (err.response?.status === 404) {

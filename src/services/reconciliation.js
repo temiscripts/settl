@@ -4,6 +4,7 @@ const { PrismaClient } = require('@prisma/client');
 const { validateStateTransition } = require('../lib/stateTransitions');
 const { appendAuditEntry } = require('./auditLog');
 const { initiateReversal } = require('./nomba');
+const { classifyFailure } = require('./bankHealth');
 const logger = require('../lib/logger');
 
 const prisma = new PrismaClient();
@@ -84,7 +85,8 @@ async function processWebhookJob(job) {
 }
 
 // Called by the reconciliation worker when Nomba's requery returns a terminal state.
-async function resolveTransaction(transaction, nombaStatus) {
+// nombaResult is the full response from requeryTransaction, used to classify failure reason.
+async function resolveTransaction(transaction, nombaStatus, nombaResult = null) {
   const { id, merchantTxRef, accountId, state } = transaction;
 
   if (nombaStatus === 'settled') {
@@ -105,15 +107,16 @@ async function resolveTransaction(transaction, nombaStatus) {
   }
 
   if (nombaStatus === 'failed') {
+    const failureReason = classifyFailure(transaction, nombaResult);
     validateStateTransition(state, 'failed');
     await prisma.$transaction(async (tx) => {
       await tx.transaction.update({
         where: { id },
-        data: { state: 'failed', lastCheckedAt: new Date() },
+        data: { state: 'failed', lastCheckedAt: new Date(), failureReason },
       });
       await appendAuditEntry(
         'STATE_TRANSITION',
-        { merchantTxRef, from: state, to: 'failed', source: 'requery' },
+        { merchantTxRef, from: state, to: 'failed', source: 'requery', failureReason },
         tx
       );
     }, { timeout: TX_TIMEOUT });
