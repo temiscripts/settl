@@ -1,0 +1,33 @@
+from fastapi import FastAPI
+from pydantic import BaseModel
+from typing import Dict, Any
+import fastapi
+
+app = FastAPI()
+
+
+class ClassificationRequest(BaseModel):
+    transaction: Dict[str, Any]
+    nomba_response: Dict[str, Any]
+
+def classifyFailure(transaction, nomba_response):
+    if transaction.get('settlementMatch') == 'underpaid':
+        return "partial"
+        
+    api_status = nomba_response.get('status')
+    
+    if api_status == 'declined':
+        return "rejected_by_bank"
+    elif api_status == 'timeout_error':
+        return "timeout"
+    else:
+        return "silent_failure"
+
+
+@app.post("/classify")
+def classify_endpoint(payload: ClassificationRequest):
+
+    reason = classifyFailure(payload.transaction, payload.nomba_response)
+    
+  
+    return {"failure_reason": reason}

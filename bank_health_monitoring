@@ -1,0 +1,69 @@
+import httpx
+from collections import defaultdict
+from datetime import datetime
+
+bank_history: dict[str, list[str]] = {}
+
+TRANSACTIONS_API_URL = "https://your-backend.com/api/transactions"  # <-- update this
+
+
+def fetch_transactions() -> list[dict]:
+    """Calls the backend and returns the raw transaction list."""
+    response = httpx.get(TRANSACTIONS_API_URL, timeout=5.0)
+    response.raise_for_status()
+    return response.json()
+
+
+def refresh_bank_history():
+    """
+    Pulls fresh data from the backend and rebuilds bank_history,
+    grouped by destinationBankCode and sorted so the most recent
+    transaction is last (matching what calculate_health expects).
+    """
+    global bank_history
+
+    transactions = fetch_transactions()
+    grouped = defaultdict(list)
+
+    for tx in transactions:
+        codes = tx.get("destinationBankCode") or []
+        if not codes:
+            continue
+        bank_code = codes[0]
+        created_at = datetime.fromisoformat(tx["createdAt"].replace("Z", "+00:00"))
+        grouped[bank_code].append((created_at, tx["state"]))
+
+    for bank_code, entries in grouped.items():
+        entries.sort(key=lambda e: e[0])  # oldest -> newest
+        bank_history[bank_code] = [state for _, state in entries]
+
+
+def calculate_health(bank_name: str):
+    """
+    Calculates health by slicing the last 10 items and iterating through them.
+    """
+    full_history = bank_history.get(bank_name, [])
+    if len(full_history) == 0:
+        return {"health_status": "Healthy", "success_rate": 100.0}
+
+    last_10_transactions = full_history[-10:]
+
+    success_count = 0
+    for tx_status in last_10_transactions:
+        if tx_status == "settled":
+            success_count += 1
+
+    total_count = len(last_10_transactions)
+    success_rate = (success_count / total_count) * 100
+
+    if success_rate >= 80.0:
+        status = "Healthy"
+    elif success_rate >= 50.0:
+        status = "Degraded"
+    else:
+        status = "Downtime"
+
+    return {
+        "health_status": status,
+        "success_rate": round(success_rate, 1),
+    }
