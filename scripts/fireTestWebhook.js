@@ -69,12 +69,11 @@ async function pollForTransaction(merchantTxRef, maxWaitMs = 15000) {
   return null;
 }
 
-async function fireWebhook({ accountRef, nombaVirtualAccountId, expectedAmount, paymentAmount }) {
+async function fireWebhook({ accountRef, nombaVirtualAccountId, expectedAmount, paymentAmount, eventType = 'payment_success' }) {
   const account = await ensureTestAccount(accountRef, nombaVirtualAccountId, expectedAmount);
 
   const transactionId = `smoke-${Date.now()}`;
   const timestamp = String(Date.now());
-  const eventType = 'collection.success';
   const requestId = randomUUID();
   const userId = process.env.NOMBA_PARENT_ACCOUNT_ID || 'test-parent-id';
   const walletId = nombaVirtualAccountId;
@@ -163,6 +162,15 @@ async function main() {
     nombaVirtualAccountId: 'va-smoke-open-001',
     expectedAmount: null,
     paymentAmount: 75000,
+  });
+
+  console.log('\n[4] payment_failed event (must NOT settle, even though amount matches expectedAmount — should move to reversing/reversed)');
+  await fireWebhook({
+    accountRef: 'smoke-test-failed',
+    nombaVirtualAccountId: 'va-smoke-failed-001',
+    expectedAmount: 50000,
+    paymentAmount: 50000,
+    eventType: 'payment_failed',
   });
 
   await prisma.$disconnect();

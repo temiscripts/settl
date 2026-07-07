@@ -157,9 +157,45 @@ Returns paginated transaction history for an account.
 
 Inbound webhook receiver for Nomba payment events. Nomba calls this endpoint; your application does not.
 
-The handler performs replay-attack prevention (rejects timestamps older than 10 minutes 30 seconds), idempotency checking on `transactionId`, and enqueues the job to BullMQ before returning `200`. Processing is entirely asynchronous.
+The handler performs full HMAC-SHA256 signature verification (`src/middleware/nombaAuth.js`, timing-safe comparison, the colon-joined `event_type:requestId:userId:walletId:transactionId:type:time:responseCode:timestamp` scheme confirmed against Nomba's docs), replay-attack prevention (rejects timestamps older than 10 minutes 30 seconds), idempotency checking on `transactionId` (Redis first, Postgres unique-constraint fallback), and enqueues the job to BullMQ before returning `200`. Processing is entirely asynchronous.
 
-> **Note:** Full HMAC signature verification is implemented as a stub pending integration with the cybersecurity module.
+The queued job also carries the webhook's `event_type`. `payment_failed`/`payout_failed` events are never settled, regardless of what their amount matches — they're routed straight to `failed` and the auto-reversal engine, the same as a `failed` status discovered later by reconciliation requery.
+
+---
+
+### Bank Health
+
+#### `GET /v1/bank-health`
+
+Failure rate per `senderBankCode`, computed from transactions that carry sender bank details (captured when Nomba includes them on a webhook). Classified `healthy` (<10% failure rate), `degraded` (10–30%), or `critical` (≥30%).
+
+---
+
+### Audit Log
+
+#### `GET /v1/audit-log?limit=`
+
+Recent entries from the hash-chained audit log, most recent first (default limit 50, max 500).
+
+#### `GET /v1/audit-log/verify`
+
+Walks the full chain and reports `{ valid, checked, reason? }`. `reason` (and the specific sequence number) is populated only when a break is detected.
+
+---
+
+### Transactions
+
+#### `GET /v1/transactions?state=&page=&limit=`
+
+Global transaction feed across all accounts (unlike `GET /v1/accounts/:id/transactions`, which is scoped to one account), plus a live `summary` (counts by state and by settlementMatch) — the data source for the ops dashboard.
+
+---
+
+### Dashboard
+
+#### `GET /`
+
+Static ops dashboard (`src/public/index.html` + `dashboard.js`), polling the transactions/bank-health/audit-log endpoints above every 5 seconds. No auth — do not expose this publicly with sensitive data in a real deployment without adding one.
 
 ---
 
@@ -420,7 +456,7 @@ Settl is deployed on Render's free tier for the purposes of this hackathon. This
 
 **Render free tier sleeps after inactivity.** The service spins down after periods of no traffic and takes a few seconds to cold-start on the next request. This is a hosting constraint, not an architectural one. A paid tier or a keep-alive ping service removes it entirely.
 
-**Webhook HMAC verification is incomplete.** The timestamp replay-attack check is implemented. Full field-based HMAC signature verification is stubbed and depends on the cybersecurity teammate's module. Until that is wired in, the webhook endpoint accepts any structurally valid payload.
+**No auth on the dashboard or read endpoints.** `GET /`, `/v1/transactions`, `/v1/bank-health`, and `/v1/audit-log*` have no authentication — fine for a hackathon demo, not for a real deployment with real customer data.
 
 ---
 
@@ -434,21 +470,29 @@ settl/
 │   ├── index.js                    # Server entry point, graceful shutdown
 │   ├── middleware/
 │   │   ├── requestId.js            # Correlation ID on every request
-│   │   ├── rateLimiter.js          # Rate limiting on the webhook endpoint
+│   │   ├── rateLimiter.js          # Rate limiting (webhook + account-provisioning routes)
+│   │   ├── nombaAuth.js            # HMAC-SHA256 webhook signature verification
 │   │   └── errorHandler.js         # Global Express error handler
 │   ├── routes/
 │   │   ├── accounts.js             # Virtual account CRUD endpoints
 │   │   ├── webhooks.js             # Inbound Nomba webhook receiver
-│   │   └── health.js               # Active health check
+│   │   ├── health.js               # Active health check
+│   │   ├── bankHealth.js           # Failure rate per bank code
+│   │   ├── auditLog.js             # Audit log read + chain verification
+│   │   └── transactions.js         # Global transaction feed + live summary
 │   ├── services/
 │   │   ├── nomba.js                # Nomba API client: auth, circuit breakers, retry
 │   │   ├── provisioning.js         # Account creation, balance, transaction history
 │   │   ├── reconciliation.js       # Ledger write, settlement match, auto-reversal
-│   │   └── auditLog.js             # Audit log write (stub, in progress)
+│   │   ├── bankHealth.js           # Bank health aggregation
+│   │   └── auditLog.js             # Hash-chained audit log write + verify
 │   ├── workers/
 │   │   └── reconciliationWorker.js # BullMQ worker + 60s reconciliation cycle
 │   ├── queues/
 │   │   └── webhookQueue.js         # BullMQ queue definition and DLQ config
+│   ├── public/                     # Ops dashboard (static, served at "/")
+│   │   ├── index.html
+│   │   └── dashboard.js
 │   └── lib/
 │       ├── stateTransitions.js     # State machine validator
 │       ├── circuitBreaker.js       # opossum circuit breaker factory
@@ -458,6 +502,10 @@ settl/
 │   ├── stateTransitions.test.js
 │   ├── reconciliation.test.js
 │   └── resolveTransaction.test.js
+├── scripts/
+│   ├── fireTestWebhook.js          # Signed end-to-end webhook smoke test
+│   ├── loadTest.js                 # Concurrent webhook load test
+│   └── testReversal.js             # Live reversal integration test
 ├── .github/workflows/ci.yml        # GitHub Actions CI pipeline
 ├── Dockerfile
 ├── docker-compose.yml

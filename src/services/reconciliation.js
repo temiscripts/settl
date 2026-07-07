@@ -18,21 +18,27 @@ function computeSettlementMatch(receivedAmount, expectedAmount) {
   return 'overpaid';
 }
 
+// Nomba event types that mean the money was NOT actually credited to us.
+// A webhook carrying one of these must never be treated as a successful
+// payment, regardless of what its amount field happens to match.
+const FAILURE_EVENTS = new Set(['payment_failed', 'payout_failed']);
+
 // Called by the BullMQ worker for each dequeued webhook job.
 async function processWebhookJob(job) {
-  const { merchantTxRef, sessionId, amount, accountId,
+  const { merchantTxRef, sessionId, amount, accountId, eventType,
           senderAccountName, senderAccountNumber, senderBankCode } = job.data;
 
   const account = await prisma.account.findUnique({ where: { id: accountId } });
   if (!account) throw new Error(`Account not found: ${accountId}`);
 
-  const settlementMatch = computeSettlementMatch(amount, account.expectedAmount);
+  const isFailure = FAILURE_EVENTS.has(eventType);
+  const settlementMatch = isFailure ? null : computeSettlementMatch(amount, account.expectedAmount);
 
   // underpaid payments stay pending (top-up expected); everything else settles
-  const settleImmediately = settlementMatch !== 'underpaid';
+  const settleImmediately = !isFailure && settlementMatch !== 'underpaid';
 
-  await prisma.$transaction(async (tx) => {
-    const txRecord = await tx.transaction.create({
+  const txRecord = await prisma.$transaction(async (tx) => {
+    const created = await tx.transaction.create({
       data: {
         accountId,
         merchantTxRef,
@@ -49,13 +55,13 @@ async function processWebhookJob(job) {
 
     await appendAuditEntry(
       'WEBHOOK_RECEIVED',
-      { merchantTxRef, amount, settlementMatch, accountId },
+      { merchantTxRef, amount, eventType, settlementMatch, accountId },
       tx
     );
 
     validateStateTransition('initiated', 'pending');
     await tx.transaction.update({
-      where: { id: txRecord.id },
+      where: { id: created.id },
       data: { state: 'pending', lastCheckedAt: new Date() },
     });
     await appendAuditEntry(
@@ -64,10 +70,21 @@ async function processWebhookJob(job) {
       tx
     );
 
-    if (settleImmediately) {
+    if (isFailure) {
+      validateStateTransition('pending', 'failed');
+      await tx.transaction.update({
+        where: { id: created.id },
+        data: { state: 'failed', lastCheckedAt: new Date() },
+      });
+      await appendAuditEntry(
+        'STATE_TRANSITION',
+        { merchantTxRef, from: 'pending', to: 'failed', source: 'webhook', eventType },
+        tx
+      );
+    } else if (settleImmediately) {
       validateStateTransition('pending', 'settled');
       await tx.transaction.update({
-        where: { id: txRecord.id },
+        where: { id: created.id },
         data: { state: 'settled' },
       });
       await appendAuditEntry(
@@ -76,10 +93,24 @@ async function processWebhookJob(job) {
         tx
       );
     }
+
+    return created;
   }, { timeout: TX_TIMEOUT });
 
+  if (isFailure) {
+    logger.info({ merchantTxRef, eventType }, 'webhook reported a failed payment — triggering reversal');
+    await initiateAutoReversal({
+      id: txRecord.id,
+      merchantTxRef,
+      amount,
+      senderAccountName,
+      senderAccountNumber,
+      senderBankCode,
+    });
+  }
+
   logger.info(
-    { merchantTxRef, amount, settlementMatch, settled: settleImmediately },
+    { merchantTxRef, amount, eventType, settlementMatch, settled: settleImmediately, failed: isFailure },
     'webhook job processed'
   );
 }

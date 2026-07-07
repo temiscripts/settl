@@ -31,7 +31,7 @@ const TEST_WALLET_ID   = process.env.NOMBA_SUB_ACCOUNT_ID  || '1dde5fef-fa76-44b
 
 function buildPayload(txId) {
   return {
-    event_type: 'payment.success',
+    event_type: 'payment_success',
     requestId: txId,
     data: {
       transaction: {

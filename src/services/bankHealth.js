@@ -1,7 +1,10 @@
 'use strict';
 
 const { PrismaClient } = require('@prisma/client');
+
 const prisma = new PrismaClient();
+
+const FAILURE_STATES = ['failed', 'reversing', 'reversed'];
 
 // Translated from the data scientist's Python classifyFailure function.
 // nombaResponse is the full response object from requeryTransaction; may be null.
@@ -13,45 +16,71 @@ function classifyFailure(transaction, nombaResponse) {
   return 'silent_failure';
 }
 
-async function getBankHealth(bankCode) {
-  const recent = await prisma.transaction.findMany({
-    where: { senderBankCode: bankCode },
-    orderBy: { createdAt: 'desc' },
-    take: 10,
-    select: { state: true },
+function classify(failureRate) {
+  if (failureRate >= 0.3) return 'critical';
+  if (failureRate >= 0.1) return 'degraded';
+  return 'healthy';
+}
+
+async function getReport() {
+  const rows = await prisma.transaction.groupBy({
+    by: ['senderBankCode', 'state'],
+    where: { senderBankCode: { not: null } },
+    _count: { _all: true },
   });
 
-  if (recent.length === 0) {
-    return { health_status: 'Unknown', success_rate: null, sample_size: 0 };
+  const byBank = new Map();
+  for (const row of rows) {
+    const code = row.senderBankCode;
+    if (!byBank.has(code)) {
+      byBank.set(code, { bankCode: code, totalTransactions: 0, settled: 0, pending: 0, failed: 0 });
+    }
+    const entry = byBank.get(code);
+    const count = row._count._all;
+    entry.totalTransactions += count;
+    if (FAILURE_STATES.includes(row.state)) entry.failed += count;
+    else if (row.state === 'settled') entry.settled += count;
+    else entry.pending += count;
   }
 
-  const settled = recent.filter((tx) => tx.state === 'settled').length;
-  const successRate = (settled / recent.length) * 100;
+  const banks = Array.from(byBank.values())
+    .map((b) => {
+      const failureRate = b.totalTransactions > 0 ? b.failed / b.totalTransactions : 0;
+      return { ...b, failureRate: Number(failureRate.toFixed(4)), status: classify(failureRate) };
+    })
+    .sort((a, b) => b.failureRate - a.failureRate);
 
-  let health_status;
-  if (successRate >= 80) health_status = 'Healthy';
-  else if (successRate >= 50) health_status = 'Degraded';
-  else health_status = 'Downtime';
+  return { generatedAt: new Date().toISOString(), banks };
+}
 
+async function getBankByCode(bankCode) {
+  const rows = await prisma.transaction.groupBy({
+    by: ['state'],
+    where: { senderBankCode: bankCode },
+    _count: { _all: true },
+  });
+
+  if (rows.length === 0) return null;
+
+  let total = 0, settled = 0, pending = 0, failed = 0;
+  for (const row of rows) {
+    const count = row._count._all;
+    total += count;
+    if (FAILURE_STATES.includes(row.state)) failed += count;
+    else if (row.state === 'settled') settled += count;
+    else pending += count;
+  }
+
+  const failureRate = total > 0 ? failed / total : 0;
   return {
-    health_status,
-    success_rate: Math.round(successRate * 10) / 10,
-    sample_size: recent.length,
+    bankCode,
+    totalTransactions: total,
+    settled,
+    pending,
+    failed,
+    failureRate: Number(failureRate.toFixed(4)),
+    status: classify(failureRate),
   };
 }
 
-async function getAllBankHealth() {
-  const banks = await prisma.transaction.groupBy({
-    by: ['senderBankCode'],
-    where: { senderBankCode: { not: null } },
-  });
-
-  return Promise.all(
-    banks.map(async ({ senderBankCode }) => ({
-      bankCode: senderBankCode,
-      ...(await getBankHealth(senderBankCode)),
-    }))
-  );
-}
-
-module.exports = { classifyFailure, getBankHealth, getAllBankHealth };
+module.exports = { classifyFailure, getReport, getBankByCode };
