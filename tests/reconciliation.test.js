@@ -44,8 +44,8 @@ after(async () => {
   await prisma.$disconnect();
 });
 
-function makeJob(ref, amount, accountId) {
-  return { data: { merchantTxRef: ref, sessionId: `sess-${ref}`, amount, accountId } };
+function makeJob(ref, amount, accountId, extra = {}) {
+  return { data: { merchantTxRef: ref, sessionId: `sess-${ref}`, amount, accountId, ...extra } };
 }
 
 test('exact payment settles immediately with settlementMatch=exact', async () => {
@@ -83,6 +83,33 @@ test('duplicate merchantTxRef is rejected by DB unique constraint', async () => 
       return err.message.includes('Unique constraint') || err.code === 'P2002';
     }
   );
+});
+
+test('payment_failed event never settles, even when amount exactly matches expectedAmount', async () => {
+  // Regression test: the webhook handler used to ignore event_type entirely,
+  // so a failed-payment webhook whose amount happened to match expectedAmount
+  // would be recorded as settled — a failed payment shown as paid.
+  await processWebhookJob(
+    makeJob('test-reconc-failedevent', 10000, accountWithExpected.id, { eventType: 'payment_failed' })
+  );
+  const tx = await prisma.transaction.findUnique({ where: { merchantTxRef: 'test-reconc-failedevent' } });
+  assert.notEqual(tx.state, 'settled');
+  assert.equal(tx.settlementMatch, null);
+});
+
+test('payment_failed event with sender details captured moves past failed toward reversal', async () => {
+  await processWebhookJob(
+    makeJob('test-reconc-failedreversal', 10000, accountWithExpected.id, {
+      eventType: 'payment_failed',
+      senderAccountName: 'Test Sender',
+      senderAccountNumber: '0123456789',
+      senderBankCode: '058',
+    })
+  );
+  const tx = await prisma.transaction.findUnique({ where: { merchantTxRef: 'test-reconc-failedreversal' } });
+  assert.notEqual(tx.state, 'settled');
+  assert.ok(['reversing', 'reversed'].includes(tx.state));
+  assert.equal(tx.senderBankCode, '058');
 });
 
 test('non-existent accountId throws', async () => {

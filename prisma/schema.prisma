@@ -49,7 +49,11 @@ model AuditLog {
   id             String   @id @default(uuid())
   sequenceNumber Int      @unique
   eventType      String
-  payload        Json
+  // Stored as the exact JSON string that was hashed, not `Json`/jsonb —
+  // Postgres jsonb does not preserve key order/whitespace on write, so
+  // re-serializing a jsonb column on read produces a different string than
+  // the one hashed at write time and permanently breaks verifyAuditChain().
+  payload        String   @db.Text
   previousHash   String
   hash           String
   timestamp      DateTime @default(now())

@@ -2,6 +2,7 @@
 
 require('dotenv').config();
 
+const path = require('path');
 const express = require('express');
 const { PrismaClient } = require('@prisma/client');
 const requestId = require('./middleware/requestId');
@@ -9,6 +10,9 @@ const errorHandler = require('./middleware/errorHandler');
 const healthRouter = require('./routes/health');
 const webhooksRouter = require('./routes/webhooks');
 const accountsRouter = require('./routes/accounts');
+const bankHealthRouter = require('./routes/bankHealth');
+const auditLogRouter = require('./routes/auditLog');
+const transactionsRouter = require('./routes/transactions');
 
 const { getWebhookQueue } = require('./queues/webhookQueue');
 const { startReconciliationWorker } = require('./workers/reconciliationWorker');
@@ -22,11 +26,17 @@ const PORT = process.env.PORT || 3000;
 // requestId must be first as every subsequent middleware needs req.requestId
 app.use(requestId);
 
+// Ops dashboard — static assets, served at "/"
+app.use(express.static(path.join(__dirname, 'public')));
+
 app.use(express.json({ limit: '10kb' }));
 
 app.use('/v1', healthRouter);
 app.use('/v1', webhooksRouter);
 app.use('/v1', accountsRouter);
+app.use('/v1', bankHealthRouter);
+app.use('/v1', auditLogRouter);
+app.use('/v1', transactionsRouter);
 
 app.use(errorHandler);
 

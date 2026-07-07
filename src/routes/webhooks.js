@@ -88,6 +88,7 @@ router.post(
         sessionId: transactionId,
         amount,
         accountId: account.id,
+        eventType,
         senderAccountName,
         senderAccountNumber,
         senderBankCode,

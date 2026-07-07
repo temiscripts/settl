@@ -3,6 +3,7 @@
 const { Router } = require('express');
 const { z } = require('zod');
 const provisioning = require('../services/provisioning');
+const { accountsRateLimiter } = require('../middleware/rateLimiter');
 const logger = require('../lib/logger');
 
 const router = Router();
@@ -14,7 +15,7 @@ const createAccountSchema = z.object({
   expiryDate: z.string().datetime().optional(),
 });
 
-router.post('/accounts', async (req, res, next) => {
+router.post('/accounts', accountsRateLimiter, async (req, res, next) => {
   const result = createAccountSchema.safeParse(req.body);
   if (!result.success) {
     return res.status(400).json({ error: 'Validation failed', details: result.error.flatten() });

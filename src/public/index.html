@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Settl — Ops Dashboard</title>
+<style>
+  :root {
+    --surface-1:      #fcfcfb;
+    --page-plane:     #f9f9f7;
+    --text-primary:   #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted:     #898781;
+    --gridline:       #e1e0d9;
+    --border:         rgba(11,11,11,0.10);
+    --good:           #0ca30c;
+    --warning:        #fab219;
+    --serious:        #ec835a;
+    --critical:       #d03b3b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --surface-1:      #1a1a19;
+      --page-plane:     #0d0d0d;
+      --text-primary:   #ffffff;
+      --text-secondary: #c3c2b7;
+      --text-muted:     #898781;
+      --gridline:       #2c2c2a;
+      --border:         rgba(255,255,255,0.10);
+      --good:           #0ca30c;
+      --warning:        #fab219;
+      --serious:        #ec835a;
+      --critical:       #d03b3b;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--page-plane);
+    color: var(--text-primary);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  main {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 24px 20px 64px;
+  }
+  header {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 24px 20px 0;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  header h1 {
+    font-size: 20px;
+    font-weight: 700;
+    margin: 0;
+  }
+  .status-line {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+  .live-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--good);
+    box-shadow: 0 0 0 0 rgba(12,163,12,0.5);
+    animation: pulse 2s infinite;
+  }
+  .live-dot.stale { background: var(--text-muted); animation: none; }
+  @keyframes pulse {
+    0%   { box-shadow: 0 0 0 0 rgba(12,163,12,0.4); }
+    70%  { box-shadow: 0 0 0 6px rgba(12,163,12,0); }
+    100% { box-shadow: 0 0 0 0 rgba(12,163,12,0); }
+  }
+
+  section { margin-top: 28px; }
+  h2 {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-muted);
+    margin: 0 0 12px;
+    font-weight: 600;
+  }
+
+  /* ---- stat tiles ---- */
+  .stat-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+  }
+  .stat-tile {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+  .stat-tile .label {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+  }
+  .stat-tile .value {
+    font-size: 26px;
+    font-weight: 700;
+    font-variant-numeric: proportional-nums;
+  }
+
+  /* ---- segmented match bar ---- */
+  .match-bar {
+    display: flex;
+    height: 22px;
+    border-radius: 4px;
+    overflow: hidden;
+    background: var(--gridline);
+    gap: 2px;
+  }
+  .match-bar .seg {
+    height: 100%;
+    min-width: 4px;
+  }
+  .match-bar .seg.exact    { background: var(--good); border-radius: 4px 0 0 4px; }
+  .match-bar .seg.over     { background: var(--warning); }
+  .match-bar .seg.under    { background: var(--serious); }
+  .match-bar .seg.none     { background: var(--critical); border-radius: 0 4px 4px 0; }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-top: 12px;
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+  .legend .item { display: flex; align-items: center; gap: 6px; }
+  .legend .swatch { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+  .legend .swatch.exact  { background: var(--good); }
+  .legend .swatch.over   { background: var(--warning); }
+  .legend .swatch.under  { background: var(--serious); }
+  .legend .swatch.none   { background: var(--critical); }
+
+  /* ---- bank health cards ---- */
+  .bank-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+  }
+  .bank-card {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--gridline);
+    border-radius: 8px;
+    padding: 14px 16px;
+  }
+  .bank-card.healthy  { border-left-color: var(--good); }
+  .bank-card.degraded { border-left-color: var(--warning); }
+  .bank-card.critical { border-left-color: var(--critical); }
+  .bank-card .bank-code {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    padding: 2px 7px;
+    border-radius: 4px;
+    margin-bottom: 8px;
+  }
+  .badge.healthy  { color: var(--good);     background: color-mix(in srgb, var(--good) 15%, transparent); }
+  .badge.degraded { color: var(--warning);  background: color-mix(in srgb, var(--warning) 20%, transparent); }
+  .badge.critical { color: var(--critical); background: color-mix(in srgb, var(--critical) 15%, transparent); }
+  .bank-card .metrics {
+    font-size: 12px;
+    color: var(--text-secondary);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .bank-card .failure-rate {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+
+  /* ---- transactions table ---- */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    font-size: 13px;
+  }
+  th, td {
+    text-align: left;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--gridline);
+  }
+  th {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: var(--text-muted);
+    font-weight: 600;
+  }
+  tr:last-child td { border-bottom: none; }
+  td.amount { font-variant-numeric: tabular-nums; }
+  td.ref { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+
+  .pill {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 999px;
+  }
+  .pill.exact     { color: var(--good);     background: color-mix(in srgb, var(--good) 15%, transparent); }
+  .pill.over      { color: var(--warning);  background: color-mix(in srgb, var(--warning) 20%, transparent); }
+  .pill.under     { color: var(--serious);  background: color-mix(in srgb, var(--serious) 20%, transparent); }
+  .pill.failed    { color: var(--critical); background: color-mix(in srgb, var(--critical) 15%, transparent); }
+  .pill.reversing,
+  .pill.reversed  { color: var(--text-muted); background: color-mix(in srgb, var(--text-muted) 15%, transparent); }
+
+  .empty-state {
+    background: var(--surface-1);
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 32px;
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 13px;
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Settl — Ops Dashboard</h1>
+  <div class="status-line">
+    <span class="live-dot" id="liveDot"></span>
+    <span id="lastUpdated">Loading…</span>
+  </div>
+</header>
+
+<main>
+  <section id="statsSection">
+    <h2>Transaction Summary</h2>
+    <div class="stat-row" id="stats"></div>
+  </section>
+
+  <section id="matchBarSection"></section>
+
+  <section>
+    <div style="display:flex; align-items:center; justify-content:space-between;">
+      <h2 style="margin-bottom:0">Bank Health</h2>
+    </div>
+    <div class="bank-grid" id="bankHealth" style="margin-top:12px"></div>
+  </section>
+
+  <section>
+    <h2>Recent Transactions</h2>
+    <div id="txTable"></div>
+  </section>
+
+  <section>
+    <div style="display:flex; align-items:center; justify-content:space-between;">
+      <h2 style="margin-bottom:0">Audit Trail</h2>
+      <span id="chainStatus" class="badge"></span>
+    </div>
+    <div id="auditLog" style="margin-top:12px"></div>
+  </section>
+</main>
+
+<script src="/dashboard.js" defer></script>
+</body>
+</html>

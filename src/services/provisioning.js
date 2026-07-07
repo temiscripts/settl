@@ -63,13 +63,6 @@ async function getAccount(id) {
 async function getBalance(accountId) {
   await getAccount(accountId);
 
-  const result = await prisma.transaction.aggregate({
-    where: { accountId, state: 'settled' },
-    _sum: {
-      amount: true,
-    },
-  });
-
   const credits = await prisma.transaction.aggregate({
     where: { accountId, state: 'settled', direction: 'credit' },
     _sum: { amount: true },
