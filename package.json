@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
-    "test": "node --test tests/"
+    "test": "node --test tests/reconciliation.test.js && node --test tests/resolveTransaction.test.js"
   },
   "engines": {
     "node": ">=18.0.0"

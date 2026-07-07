@@ -23,6 +23,11 @@ before(async () => {
 });
 
 after(async () => {
+  await prisma.auditLog.deleteMany({
+    where: {
+      payload: { path: ['merchantTxRef'], string_starts_with: 'resolve-' },
+    },
+  });
   await prisma.transaction.deleteMany({ where: { merchantTxRef: { startsWith: 'resolve-' } } });
   await prisma.account.deleteMany({ where: { accountRef: { startsWith: 'ref-test-resolve-' } } });
   await prisma.$disconnect();
